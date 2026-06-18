@@ -382,30 +382,23 @@ Implement expiry alerts and block claims on expired inventory.
 # 📂 Project Structure
 
 ```text
-Local Food Wastage Management System/
-
-│
-├── app.py
-├── README.md
-├── requirements.txt
-├── database.sql
-├── queries.sql
-├── .env.example
-├── .gitignore
-│
-├── pages/
-│   ├── 1_Supply_Analysis.py
-│   ├── 2_Demand_Analysis.py
-│   ├── 3_Operations_Analysis.py
-│   ├── 4_SQL_Explorer.py
-│   └── 5_Business_Insights.py
+local-food-wastage-management-system/
 │
 ├── Data/
 ├── Image/
+├── pages/
 │
-├── data_cleaning.ipynb
+├── app.py
+├── queries.sql
+├── database.sql
+├── requirements.txt
+├── README.md
+│
 ├── eda.ipynb
-└── profiling_notes.ipynb
+├── data_cleaning.ipynb
+├── profiling_notes.ipynb
+│
+└── .gitignore
 ```
 
 ---
