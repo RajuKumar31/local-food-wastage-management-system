@@ -453,16 +453,32 @@ inside the `Image/` folder and embed them here.
 
 ---
 
-# 👨‍💻 Author
+## 👨‍💻 Author
 
 **Raju Kumar S**
 
-Data Analyst | SQL | PostgreSQL | Power BI | Excel | Streamlit
+Data Analyst | Business Analyst | Power BI Developer
 
 ### Connect With Me
 
-* LinkedIn: https://www.linkedin.com/in/YOUR-LINKEDIN
-* GitHub: https://github.com/YOUR-GITHUB
-* Portfolio: https://YOUR-PORTFOLIO
+* LinkedIn: https://www.linkedin.com/in/rajukumarsahani/
+* GitHub: https://github.com/RajuKumar31
+* Portfolio: https://rajukumar31.github.io/
 
-This project demonstrates skills in data cleaning, SQL analysis, PostgreSQL database design, dashboard development, business intelligence, and data storytelling.
+---
+
+### About Me
+
+I am a Data Analyst with experience in business operations, process improvement, SQL, Power BI, Excel, and data visualization. I enjoy building end-to-end analytics solutions that transform raw data into actionable business insights.
+
+This project demonstrates my ability to perform:
+
+* Data Cleaning & Validation
+* Exploratory Data Analysis (EDA)
+* Database Design using PostgreSQL
+* SQL-Based Business Analysis
+* Interactive Dashboard Development with Streamlit
+* Business Insight Generation & Recommendations
+
+Feel free to connect with me for opportunities, collaborations, or discussions related to Data Analytics, Business Intelligence, and Data Science.
+
