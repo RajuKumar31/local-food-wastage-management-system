@@ -7,10 +7,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-from dotenv import load_dotenv
 from sqlalchemy import create_engine
-from pathlib import Path
-import os
 
 
 # ============================================
@@ -32,33 +29,17 @@ from pathlib import Path
 @st.cache_resource
 def get_engine():
 
-    env_path = Path(__file__).resolve().parent / ".env"
-
-    load_dotenv(env_path, override=True)
-
-    DB_HOST = os.getenv("DB_HOST")
-    DB_PORT = os.getenv("DB_PORT")
-    DB_NAME = os.getenv("DB_NAME")
-    DB_USER = os.getenv("DB_USER")
-    DB_PASSWORD = os.getenv("DB_PASSWORD")
-
-    if not all([DB_HOST, DB_PORT, DB_NAME, DB_USER]):
-        st.error(
-            f"""
-            Environment variables missing
-
-            HOST={DB_HOST}
-            PORT={DB_PORT}
-            DB={DB_NAME}
-            USER={DB_USER}
-            """
-        )
-        st.stop()
+    DB_HOST = st.secrets["DB_HOST"]
+    DB_PORT = st.secrets["DB_PORT"]
+    DB_NAME = st.secrets["DB_NAME"]
+    DB_USER = st.secrets["DB_USER"]
+    DB_PASSWORD = st.secrets["DB_PASSWORD"]
 
     connection_string = (
         f"postgresql+psycopg2://"
         f"{DB_USER}:{DB_PASSWORD}"
         f"@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+        f"?sslmode=require"
     )
 
     return create_engine(connection_string)
