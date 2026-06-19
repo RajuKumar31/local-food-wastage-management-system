@@ -13,7 +13,7 @@
 -- ============================================
 
 SELECT
-    SUM("Quantity") AS total_food_available
+    SUM("quantity") AS total_food_available
 FROM food_listings;
 
 -- ============================================
@@ -26,10 +26,10 @@ FROM food_listings;
 -- ============================================
 
 SELECT
-    "Location",
+    "location",
     COUNT(*) AS total_listings
 FROM food_listings
-GROUP BY "Location"
+GROUP BY "location"
 ORDER BY total_listings DESC
 LIMIT 1;
 
@@ -42,10 +42,10 @@ LIMIT 1;
 -- ============================================
 
 SELECT
-    "Food_Type",
+    "food_type",
     COUNT(*) AS total_listings
 FROM food_listings
-GROUP BY "Food_Type"
+GROUP BY "food_type"
 ORDER BY total_listings DESC;
 
 -- ============================================
@@ -57,7 +57,7 @@ ORDER BY total_listings DESC;
 -- ============================================
 
 SELECT
-    "Status",
+    "status",
     COUNT(*) AS total_claims,
     ROUND(
         COUNT(*) * 100.0
@@ -65,7 +65,7 @@ SELECT
         2
     ) AS percentage_of_claims
 FROM claims
-GROUP BY "Status"
+GROUP BY "status"
 ORDER BY total_claims DESC;
 
 -- ============================================
@@ -80,13 +80,13 @@ ORDER BY total_claims DESC;
 -- ============================================
 
 SELECT
-    "Provider_ID",
-    "Name",
-    "Type",
-    "Contact"
+    "provider_id",
+    "name",
+    "type",
+    "contact"
 FROM providers
-WHERE "City" = 'New Carol'
-ORDER BY "Name";
+WHERE "city" = 'New Carol'
+ORDER BY "name";
 
 -- ============================================
 -- QUERY 6
@@ -98,12 +98,12 @@ ORDER BY "Name";
 -- ============================================
 
 SELECT
-    p."Type" AS provider_type,
-    SUM(f."Quantity") AS total_quantity
+    p."type" AS provider_type,
+    SUM(f."quantity") AS total_quantity
 FROM food_listings f
 JOIN providers p
-    ON f."Provider_ID" = p."Provider_ID"
-GROUP BY p."Type"
+    ON f."provider_id" = p."provider_id"
+GROUP BY p."type"
 ORDER BY total_quantity DESC;
 
 -- Result: Restaurants contributed the highest total food quantity
@@ -122,15 +122,15 @@ ORDER BY total_quantity DESC;
 -- ============================================
 
 SELECT
-    r."Name",
-    r."Type",
-    COUNT(c."Claim_ID") AS total_claims
+    r."name",
+    r."type",
+    COUNT(c."claim_id") AS total_claims
 FROM claims c
 JOIN receivers r
-    ON c."Receiver_ID" = r."Receiver_ID"
+    ON c."receiver_id" = r."receiver_id"
 GROUP BY
-    r."Name",
-    r."Type"
+    r."name",
+    r."type"
 ORDER BY total_claims DESC
 LIMIT 10;
 
@@ -149,12 +149,12 @@ LIMIT 10;
 -- ============================================
 
 SELECT
-    f."Food_Name",
-    COUNT(c."Claim_ID") AS total_claims
+    f."food_name",
+    COUNT(c."claim_id") AS total_claims
 FROM claims c
 JOIN food_listings f
-    ON c."Food_ID" = f."Food_ID"
-GROUP BY f."Food_Name"
+    ON c."food_id" = f."food_id"
+GROUP BY f."food_name"
 ORDER BY total_claims DESC
 LIMIT 10;
 
@@ -175,17 +175,17 @@ LIMIT 10;
 -- ============================================
 
 SELECT
-    f."Meal_Type",
-    COUNT(c."Claim_ID") AS total_claims,
+    f."meal_type",
+    COUNT(c."claim_id") AS total_claims,
     ROUND(
-        COUNT(c."Claim_ID") * 100.0
-        / SUM(COUNT(c."Claim_ID")) OVER (),
+        COUNT(c."claim_id") * 100.0
+        / SUM(COUNT(c."claim_id")) OVER (),
         2
     ) AS percentage_of_claims
 FROM claims c
 JOIN food_listings f
-    ON c."Food_ID" = f."Food_ID"
-GROUP BY f."Meal_Type"
+    ON c."food_id" = f."food_id"
+GROUP BY f."meal_type"
 ORDER BY total_claims DESC;
 
 -- Result: Breakfast generated the highest number of claims
@@ -207,15 +207,15 @@ ORDER BY total_claims DESC;
 -- ============================================
 
 SELECT
-    p."Name",
-    p."Type",
-    SUM(f."Quantity") AS total_quantity
+    p."name",
+    p."type",
+    SUM(f."quantity") AS total_quantity
 FROM food_listings f
 JOIN providers p
-    ON f."Provider_ID" = p."Provider_ID"
+    ON f."provider_id" = p."provider_id"
 GROUP BY
-    p."Name",
-    p."Type"
+    p."name",
+    p."type"
 ORDER BY total_quantity DESC
 LIMIT 10;
 
@@ -242,18 +242,18 @@ LIMIT 10;
 -- ============================================
 
 SELECT
-    p."Name",
-    p."Type",
-    COUNT(c."Claim_ID") AS successful_claims
+    p."name",
+    p."type",
+    COUNT(c."claim_id") AS successful_claims
 FROM providers p
 JOIN food_listings f
-    ON p."Provider_ID" = f."Provider_ID"
+    ON p."provider_id" = f."provider_id"
 JOIN claims c
-    ON f."Food_ID" = c."Food_ID"
-WHERE c."Status" = 'Completed'
+    ON f."food_id" = c."food_id"
+WHERE c."status" = 'Completed'
 GROUP BY
-    p."Name",
-    p."Type"
+    p."name",
+    p."type"
 ORDER BY successful_claims DESC
 LIMIT 10;
 
@@ -280,20 +280,20 @@ LIMIT 10;
 -- ============================================
 
 SELECT
-    r."Name",
-    r."Type",
+    r."name",
+    r."type",
     ROUND(
-        AVG(f."Quantity"),
+        AVG(f."quantity"),
         2
     ) AS avg_quantity_claimed
 FROM receivers r
 JOIN claims c
-    ON r."Receiver_ID" = c."Receiver_ID"
+    ON r."receiver_id" = c."receiver_id"
 JOIN food_listings f
-    ON c."Food_ID" = f."Food_ID"
+    ON c."food_id" = f."food_id"
 GROUP BY
-    r."Name",
-    r."Type"
+    r."name",
+    r."type"
 ORDER BY avg_quantity_claimed DESC
 LIMIT 10;
 
@@ -321,27 +321,27 @@ LIMIT 10;
 
 WITH provider_counts AS (
     SELECT
-        "City",
+        "city",
         COUNT(*) AS provider_count
     FROM providers
-    GROUP BY "City"
+    GROUP BY "city"
 ),
 
 receiver_counts AS (
     SELECT
-        "City",
+        "city",
         COUNT(*) AS receiver_count
     FROM receivers
-    GROUP BY "City"
+    GROUP BY "city"
 )
 
 SELECT
-    COALESCE(p."City", r."City") AS city,
+    COALESCE(p."city", r."city") AS city,
     COALESCE(provider_count, 0) AS provider_count,
     COALESCE(receiver_count, 0) AS receiver_count
 FROM provider_counts p
 FULL OUTER JOIN receiver_counts r
-    ON p."City" = r."City"
+    ON p."city" = r."city"
 ORDER BY provider_count DESC, receiver_count DESC;
 
 -- Result: The highest city-level counts were only 2–3 providers and
