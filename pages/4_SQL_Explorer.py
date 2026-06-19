@@ -5,27 +5,26 @@
 import streamlit as st
 import pandas as pd
 from sqlalchemy import create_engine
-from dotenv import load_dotenv
-import os
+
 
 # ============================================
 # DATABASE CONNECTION
 # ============================================
 
-from pathlib import Path
-
 @st.cache_resource
 def get_engine():
 
-    load_dotenv(
-        Path(__file__).resolve().parent.parent / ".env"
-    )
+    DB_HOST = st.secrets["DB_HOST"]
+    DB_PORT = st.secrets["DB_PORT"]
+    DB_NAME = st.secrets["DB_NAME"]
+    DB_USER = st.secrets["DB_USER"]
+    DB_PASSWORD = st.secrets["DB_PASSWORD"]
 
     connection_string = (
         f"postgresql+psycopg2://"
-        f"{os.getenv('DB_USER')}:{os.getenv('DB_PASSWORD')}"
-        f"@{os.getenv('DB_HOST')}:{os.getenv('DB_PORT')}"
-        f"/{os.getenv('DB_NAME')}"
+        f"{DB_USER}:{DB_PASSWORD}"
+        f"@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+        f"?sslmode=require"
     )
 
     return create_engine(connection_string)

@@ -8,28 +8,25 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 from sqlalchemy import create_engine
-from dotenv import load_dotenv
-import os
-
 
 # ============================================
 # DATABASE CONNECTION
 # ============================================
 
-from pathlib import Path
-
 @st.cache_resource
 def get_engine():
 
-    load_dotenv(
-        Path(__file__).resolve().parent.parent / ".env"
-    )
+    DB_HOST = st.secrets["DB_HOST"]
+    DB_PORT = st.secrets["DB_PORT"]
+    DB_NAME = st.secrets["DB_NAME"]
+    DB_USER = st.secrets["DB_USER"]
+    DB_PASSWORD = st.secrets["DB_PASSWORD"]
 
     connection_string = (
         f"postgresql+psycopg2://"
-        f"{os.getenv('DB_USER')}:{os.getenv('DB_PASSWORD')}"
-        f"@{os.getenv('DB_HOST')}:{os.getenv('DB_PORT')}"
-        f"/{os.getenv('DB_NAME')}"
+        f"{DB_USER}:{DB_PASSWORD}"
+        f"@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+        f"?sslmode=require"
     )
 
     return create_engine(connection_string)
@@ -73,12 +70,12 @@ claims_analysis = (
     claims
     .merge(
         receivers,
-        on="Receiver_ID",
+        on="receiver_id",
         how="left"
     )
     .merge(
         food_listings,
-        on="Food_ID",
+        on="food_id",
         how="left"
     )
 )
@@ -106,7 +103,7 @@ st.sidebar.header("Filters")
 
 
 all_receiver_types = sorted(
-    claims_analysis["Type"].unique()
+    claims_analysis["type"].unique()
 )
 
 selected_receiver_types = st.sidebar.multiselect(
@@ -117,7 +114,7 @@ selected_receiver_types = st.sidebar.multiselect(
 
 
 all_statuses = sorted(
-    claims_analysis["Status"].unique()
+    claims_analysis["status"].unique()
 )
 
 selected_statuses = st.sidebar.multiselect(
@@ -128,7 +125,7 @@ selected_statuses = st.sidebar.multiselect(
 
 
 all_meal_types = sorted(
-    claims_analysis["Meal_Type"].unique()
+    claims_analysis["meal_type"].unique()
 )
 
 selected_meal_types = st.sidebar.multiselect(
@@ -143,11 +140,11 @@ selected_meal_types = st.sidebar.multiselect(
 # ============================================
 
 filtered_claims = claims_analysis[
-    claims_analysis["Type"].isin(selected_receiver_types)
+    claims_analysis["type"].isin(selected_receiver_types)
     &
-    claims_analysis["Status"].isin(selected_statuses)
+    claims_analysis["status"].isin(selected_statuses)
     &
-    claims_analysis["Meal_Type"].isin(selected_meal_types)
+    claims_analysis["meal_type"].isin(selected_meal_types)
 ]
 
 
@@ -159,19 +156,19 @@ total_claims = len(filtered_claims)
 
 completed_claims = len(
     filtered_claims[
-        filtered_claims["Status"] == "Completed"
+        filtered_claims["status"] == "Completed"
     ]
 )
 
 pending_claims = len(
     filtered_claims[
-        filtered_claims["Status"] == "Pending"
+        filtered_claims["status"] == "Pending"
     ]
 )
 
 cancelled_claims = len(
     filtered_claims[
-        filtered_claims["Status"] == "Cancelled"
+        filtered_claims["status"] == "Cancelled"
     ]
 )
 
@@ -221,7 +218,7 @@ with col1:
     )
 
     status_counts = (
-        filtered_claims["Status"]
+        filtered_claims["status"]
         .value_counts()
         .reset_index()
     )
@@ -259,13 +256,13 @@ with col2:
     )
 
     receiver_counts = (
-        filtered_claims["Type"]
+        filtered_claims["type"]
         .value_counts()
         .reset_index()
     )
 
     receiver_counts.columns = [
-        "Receiver_Type",
+        "receiver_type",
         "Count"
     ]
 
@@ -273,9 +270,9 @@ with col2:
 
     sns.barplot(
         data=receiver_counts,
-        x="Receiver_Type",
+        x="receiver_type",
         y="Count",
-        hue="Receiver_Type",
+        hue="receiver_type",
         palette="Greens_r",
         legend=False,
         ax=ax
@@ -307,23 +304,23 @@ with col1:
     )
 
     meal_claims = (
-        filtered_claims["Meal_Type"]
+        filtered_claims["meal_type"]
         .value_counts()
         .reset_index()
     )
 
     meal_claims.columns = [
-        "Meal_Type",
-        "Claims"
+        "meal_type",
+        "claims"
     ]
 
     fig, ax = plt.subplots(figsize=(7, 4))
 
     sns.barplot(
         data=meal_claims,
-        x="Meal_Type",
-        y="Claims",
-        hue="Meal_Type",
+        x="meal_type",
+        y="claims",
+        hue="meal_type",
         palette="YlOrBr",
         legend=False,
         ax=ax
@@ -346,30 +343,30 @@ with col2:
 
     top_receivers = (
         filtered_claims
-        .groupby(["Receiver_ID", "Name"])["Claim_ID"]
+        .groupby(["receiver_id", "name"])["claim_id"]
         .count()
         .reset_index()
     )
 
     top_receivers.columns = [
-        "Receiver_ID",
-        "Receiver_Name",
-        "Claims"
+        "receiver_id",
+        "receiver_name",
+        "claims"
     ]
 
     top_receivers = (
         top_receivers
-        .nlargest(10, "Claims")
-        .sort_values("Claims")
+        .nlargest(10, "claims")
+        .sort_values("claims")
     )
 
     fig, ax = plt.subplots(figsize=(8, 5))
 
     sns.barplot(
         data=top_receivers,
-        x="Claims",
-        y="Receiver_Name",
-        hue="Receiver_Name",
+        x="claims",
+        y="receiver_name",
+        hue="receiver_name",
         palette="crest",
         legend=False,
         ax=ax

@@ -8,8 +8,6 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 from sqlalchemy import create_engine, text
-from dotenv import load_dotenv
-import os
 
 
 # ============================================
@@ -19,13 +17,17 @@ import os
 @st.cache_resource
 def get_engine():
 
-    load_dotenv()
+    DB_HOST = st.secrets["DB_HOST"]
+    DB_PORT = st.secrets["DB_PORT"]
+    DB_NAME = st.secrets["DB_NAME"]
+    DB_USER = st.secrets["DB_USER"]
+    DB_PASSWORD = st.secrets["DB_PASSWORD"]
 
     connection_string = (
         f"postgresql+psycopg2://"
-        f"{os.getenv('DB_USER')}:{os.getenv('DB_PASSWORD')}"
-        f"@{os.getenv('DB_HOST')}:{os.getenv('DB_PORT')}"
-        f"/{os.getenv('DB_NAME')}"
+        f"{DB_USER}:{DB_PASSWORD}"
+        f"@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+        f"?sslmode=require"
     )
 
     return create_engine(connection_string)
@@ -77,18 +79,18 @@ claims_analysis = (
     claims
     .merge(
         food_listings,
-        on="Food_ID",
+        on="food_id",
         how="left"
     )
     .merge(
         providers,
-        on="Provider_ID",
+        on="provider_id",
         how="left",
         suffixes=("", "_Provider")
     )
     .merge(
         receivers,
-        on="Receiver_ID",
+        on="receiver_id",
         how="left",
         suffixes=("", "_Receiver")
     )
@@ -98,17 +100,17 @@ claims_analysis = (
 # DAYS UNTIL EXPIRY
 # ============================================
 
-claims_analysis["Expiry_Date"] = pd.to_datetime(
-    claims_analysis["Expiry_Date"]
+claims_analysis["expiry_date"] = pd.to_datetime(
+    claims_analysis["expiry_date"]
 )
 
-claims_analysis["Timestamp"] = pd.to_datetime(
-    claims_analysis["Timestamp"]
+claims_analysis["timestamp"] = pd.to_datetime(
+    claims_analysis["timestamp"]
 )
 
-claims_analysis["Days_Until_Expiry"] = (
-    claims_analysis["Expiry_Date"]
-    - claims_analysis["Timestamp"]
+claims_analysis["days_until_expiry"] = (
+    claims_analysis["expiry_date"]
+    - claims_analysis["timestamp"]
 ).dt.days
 
 
@@ -132,20 +134,20 @@ st.markdown(
 
 completion_rate = (
     (
-        claims_analysis["Status"] == "Completed"
+        claims_analysis["status"] == "Completed"
     ).mean() * 100
 )
 
 expired_claims = (
-    claims_analysis["Days_Until_Expiry"] < 0
+    claims_analysis["days_until_expiry"] < 0
 ).sum()
 
 successful_claims = (
-    claims_analysis["Status"] == "Completed"
+    claims_analysis["status"] == "Completed"
 ).sum()
 
 avg_days = (
-    claims_analysis["Days_Until_Expiry"]
+    claims_analysis["days_until_expiry"]
     .mean()
 )
 
@@ -196,7 +198,7 @@ with col1:
 
     sns.histplot(
         data=claims_analysis,
-        x="Days_Until_Expiry",
+        x="days_until_expiry",
         bins=20,
         kde=True,
         color="steelblue",
@@ -229,16 +231,16 @@ with col2:
 
     total_claims = (
         claims_analysis
-        .groupby("Type_Receiver")["Claim_ID"]
+        .groupby("type")["claim_id"]
         .count()
         .reset_index(name="Total_Claims")
     )
 
     completed_claims = (
         claims_analysis[
-            claims_analysis["Status"] == "Completed"
+            claims_analysis["status"] == "Completed"
         ]
-        .groupby("Type_Receiver")["Claim_ID"]
+        .groupby("type")["claim_id"]
         .count()
         .reset_index(name="Completed_Claims")
     )
@@ -247,7 +249,7 @@ with col2:
         total_claims
         .merge(
             completed_claims,
-            on="Type_Receiver"
+            on="type"
         )
     )
 
@@ -262,9 +264,9 @@ with col2:
 
     sns.barplot(
         data=completion_df,
-        x="Type_Receiver",
+        x="type",
         y="Completion_Rate",
-        hue="Type_Receiver",
+        hue="type",
         palette="Greens",
         legend=False,
         ax=ax
@@ -304,23 +306,23 @@ with col1:
 
     provider_success = (
         claims_analysis[
-            claims_analysis["Status"] == "Completed"
+            claims_analysis["status"] == "Completed"
         ]
         .groupby(
-            ["Provider_ID", "Name"]
-        )["Claim_ID"]
+            ["provider_id", "name"]
+        )["claim_id"]
         .count()
-        .reset_index(name="Successful_Claims")
+        .reset_index(name="successful_claims")
     )
 
     provider_success = (
         provider_success
         .nlargest(
             10,
-            "Successful_Claims"
+            "successful_claims"
         )
         .sort_values(
-            "Successful_Claims"
+            "successful_claims"
         )
     )
 
@@ -328,9 +330,9 @@ with col1:
 
     sns.barplot(
         data=provider_success,
-        x="Successful_Claims",
-        y="Name",
-        hue="Name",
+        x="successful_claims",
+        y="name",
+        hue="name",
         palette="crest",
         legend=False,
         ax=ax
@@ -355,11 +357,11 @@ with col2:
     receiver_avg = (
         claims_analysis
         .groupby(
-            ["Receiver_ID", "Name_Receiver"]
-        )["Quantity"]
+            ["receiver_id", "name"]
+        )["quantity"]
         .mean()
         .reset_index(
-            name="Average_Quantity"
+            name="average_quantity"
         )
     )
 
@@ -367,10 +369,10 @@ with col2:
         receiver_avg
         .nlargest(
             10,
-            "Average_Quantity"
+            "average_quantity"
         )
         .sort_values(
-            "Average_Quantity"
+            "average_quantity"
         )
     )
 
@@ -378,9 +380,9 @@ with col2:
 
     sns.barplot(
         data=receiver_avg,
-        x="Average_Quantity",
-        y="Name_Receiver",
-        hue="Name_Receiver",
+        x="average_quantity",
+        y="name",
+        hue="name",
         palette="mako",
         legend=False,
         ax=ax

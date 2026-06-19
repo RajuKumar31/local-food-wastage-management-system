@@ -8,27 +8,25 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 from sqlalchemy import create_engine
-from dotenv import load_dotenv
-import os
 
 # ============================================
 # DATABASE CONNECTION
 # ============================================
 
-from pathlib import Path
-
 @st.cache_resource
 def get_engine():
 
-    load_dotenv(
-        Path(__file__).resolve().parent.parent / ".env"
-    )
+    DB_HOST = st.secrets["DB_HOST"]
+    DB_PORT = st.secrets["DB_PORT"]
+    DB_NAME = st.secrets["DB_NAME"]
+    DB_USER = st.secrets["DB_USER"]
+    DB_PASSWORD = st.secrets["DB_PASSWORD"]
 
     connection_string = (
         f"postgresql+psycopg2://"
-        f"{os.getenv('DB_USER')}:{os.getenv('DB_PASSWORD')}"
-        f"@{os.getenv('DB_HOST')}:{os.getenv('DB_PORT')}"
-        f"/{os.getenv('DB_NAME')}"
+        f"{DB_USER}:{DB_PASSWORD}"
+        f"@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+        f"?sslmode=require"
     )
 
     return create_engine(connection_string)
@@ -82,13 +80,13 @@ claims_analysis = (
     claims
     .merge(
         food_listings,
-        on="Food_ID",
+        on="food_id",
         how="left"
     )
 )
 
 completed_claims = (
-    claims["Status"] == "Completed"
+    claims["status"] == "Completed"
 ).sum()
 
 completion_rate = (
@@ -97,42 +95,42 @@ completion_rate = (
 ) * 100
 
 total_food_available = (
-    food_listings["Quantity"]
+    food_listings["quantity"]
     .sum()
 )
 
 top_meal_type = (
-    claims_analysis["Meal_Type"]
+    claims_analysis["meal_type"]
     .value_counts()
     .idxmax()
 )
 
-food_listings["Expiry_Date"] = pd.to_datetime(
-    food_listings["Expiry_Date"]
+food_listings["expiry_date"] = pd.to_datetime(
+    food_listings["expiry_date"]
 )
 
-claims["Timestamp"] = pd.to_datetime(
-    claims["Timestamp"]
+claims["timestamp"] = pd.to_datetime(
+    claims["timestamp"]
 )
 
 expiry_analysis = (
     claims
     .merge(
         food_listings[
-            ["Food_ID", "Expiry_Date"]
+            ["food_id", "expiry_date"]
         ],
-        on="Food_ID",
+        on="food_id",
         how="left"
     )
 )
 
-expiry_analysis["Days_Until_Expiry"] = (
-    expiry_analysis["Expiry_Date"]
-    - expiry_analysis["Timestamp"]
+expiry_analysis["days_until_expiry"] = (
+    expiry_analysis["expiry_date"]
+    - expiry_analysis["timestamp"]
 ).dt.days
 
 avg_days_until_expiry = (
-    expiry_analysis["Days_Until_Expiry"]
+    expiry_analysis["days_until_expiry"]
     .mean()
 )
 
@@ -375,7 +373,7 @@ with col1:
     st.markdown("### Claim Status Distribution")
 
     status_counts = (
-        claims["Status"]
+        claims["status"]
         .value_counts()
         .reset_index()
     )
@@ -421,14 +419,14 @@ with col2:
     st.markdown("### Claims by Meal Type")
 
     meal_claims = (
-        claims_analysis["Meal_Type"]
+        claims_analysis["meal_type"]
         .value_counts()
         .reset_index()
     )
 
     meal_claims.columns = [
-        "Meal_Type",
-        "Claims"
+        "meal_type",
+        "claims"
     ]
 
     fig, ax = plt.subplots(
@@ -437,9 +435,9 @@ with col2:
 
     sns.barplot(
         data=meal_claims,
-        x="Meal_Type",
-        y="Claims",
-        hue="Meal_Type",
+        x="meal_type",
+        y="claims",
+        hue="meal_type",
         palette="YlOrBr",
         legend=False,
         ax=ax

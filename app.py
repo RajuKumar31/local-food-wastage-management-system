@@ -24,8 +24,6 @@ st.set_page_config(
 # DATABASE CONNECTION
 # ============================================
 
-from pathlib import Path
-
 @st.cache_resource
 def get_engine():
 
@@ -85,7 +83,6 @@ def load_data():
 
 providers, receivers, food_listings, claims = load_data()
 
-
 # ============================================
 # PAGE TITLE
 # ============================================
@@ -105,7 +102,7 @@ total_receivers = len(receivers)
 total_food_listings = len(food_listings)
 
 completed_claims = (
-    claims["Status"] == "Completed"
+    claims["status"] == "Completed"
 ).sum()
 
 completion_rate = (
@@ -154,7 +151,7 @@ col1, col2 = st.columns(2)
 with col1:
 
     provider_counts = (
-        providers["Type"]
+        providers["type"]
         .value_counts()
         .reset_index()
     )
@@ -203,10 +200,10 @@ with col1:
 with col2:
 
     status_counts = (
-        claims["Status"]
-        .value_counts()
-        .reset_index()
-    )
+    claims["status"]
+    .value_counts()
+    .reset_index()
+)
 
     status_counts.columns = [
         "Status",

@@ -8,32 +8,29 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 from sqlalchemy import create_engine
-from dotenv import load_dotenv
-import os
 
 
 # ============================================
 # DATABASE CONNECTION
 # ============================================
 
-from pathlib import Path
-
 @st.cache_resource
 def get_engine():
 
-    load_dotenv(
-        Path(__file__).resolve().parent.parent / ".env"
-    )
+    DB_HOST = st.secrets["DB_HOST"]
+    DB_PORT = st.secrets["DB_PORT"]
+    DB_NAME = st.secrets["DB_NAME"]
+    DB_USER = st.secrets["DB_USER"]
+    DB_PASSWORD = st.secrets["DB_PASSWORD"]
 
     connection_string = (
         f"postgresql+psycopg2://"
-        f"{os.getenv('DB_USER')}:{os.getenv('DB_PASSWORD')}"
-        f"@{os.getenv('DB_HOST')}:{os.getenv('DB_PORT')}"
-        f"/{os.getenv('DB_NAME')}"
+        f"{DB_USER}:{DB_PASSWORD}"
+        f"@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+        f"?sslmode=require"
     )
 
     return create_engine(connection_string)
-
 
 # ============================================
 # LOAD DATA
@@ -82,7 +79,7 @@ st.sidebar.header("Filters")
 
 
 all_provider_types = sorted(
-    food_listings["Provider_Type"].unique()
+    food_listings["provider_type"].unique()
 )
 
 selected_provider_types = st.sidebar.multiselect(
@@ -93,7 +90,7 @@ selected_provider_types = st.sidebar.multiselect(
 
 
 all_food_types = sorted(
-    food_listings["Food_Type"].unique()
+    food_listings["food_type"].unique()
 )
 
 selected_food_types = st.sidebar.multiselect(
@@ -104,7 +101,7 @@ selected_food_types = st.sidebar.multiselect(
 
 
 all_meal_types = sorted(
-    food_listings["Meal_Type"].unique()
+    food_listings["meal_type"].unique()
 )
 
 selected_meal_types = st.sidebar.multiselect(
@@ -119,11 +116,11 @@ selected_meal_types = st.sidebar.multiselect(
 # ============================================
 
 filtered_food = food_listings[
-    food_listings["Provider_Type"].isin(selected_provider_types)
+    food_listings["provider_type"].isin(selected_provider_types)
     &
-    food_listings["Food_Type"].isin(selected_food_types)
+    food_listings["food_type"].isin(selected_food_types)
     &
-    food_listings["Meal_Type"].isin(selected_meal_types)
+    food_listings["meal_type"].isin(selected_meal_types)
 ]
 
 
@@ -142,13 +139,13 @@ with col1:
 with col2:
     st.metric(
         "Total Quantity",
-        f"{filtered_food['Quantity'].sum():,}"
+        f"{filtered_food['quantity'].sum():,}"
     )
 
 with col3:
     st.metric(
         "Provider Types",
-        filtered_food["Provider_Type"].nunique()
+        filtered_food["provider_type"].nunique()
     )
 
 
@@ -167,7 +164,7 @@ with col1:
     st.subheader("Food Type Distribution")
 
     food_type_counts = (
-        filtered_food["Food_Type"]
+        filtered_food["food_type"]
         .value_counts()
         .reset_index()
     )
@@ -202,7 +199,7 @@ with col2:
     st.subheader("Meal Type Distribution")
 
     meal_type_counts = (
-        filtered_food["Meal_Type"]
+        filtered_food["meal_type"]
         .value_counts()
         .reset_index()
     )
@@ -249,30 +246,30 @@ with col1:
 
     provider_quantity = (
         filtered_food
-        .groupby("Provider_ID")["Quantity"]
+        .groupby("provider_id")["quantity"]
         .sum()
         .reset_index()
     )
 
     provider_quantity = provider_quantity.merge(
-        providers[["Provider_ID", "Name"]],
-        on="Provider_ID",
+        providers[["provider_id", "name"]],
+        on="provider_id",
         how="left"
     )
 
     top_10 = (
         provider_quantity
-        .nlargest(10, "Quantity")
-        .sort_values("Quantity")
+        .nlargest(10, "quantity")
+        .sort_values("quantity")
     )
 
     fig, ax = plt.subplots(figsize=(8, 5))
 
     sns.barplot(
         data=top_10,
-        x="Quantity",
-        y="Name",
-        hue="Name",
+        x="quantity",
+        y="name",
+        hue="name",
         palette="crest",
         legend=False,
         ax=ax
@@ -294,11 +291,11 @@ with col2:
 
     contribution = (
         filtered_food
-        .groupby("Provider_Type")["Quantity"]
+        .groupby("provider_type")["quantity"]
         .sum()
         .reset_index()
         .sort_values(
-            "Quantity",
+            "quantity",
             ascending=False
         )
     )
@@ -307,9 +304,9 @@ with col2:
 
     sns.barplot(
         data=contribution,
-        x="Provider_Type",
-        y="Quantity",
-        hue="Provider_Type",
+        x="provider_type",
+        y="quantity",
+        hue="provider_type",
         palette="Blues_d",
         legend=False,
         ax=ax
