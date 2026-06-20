@@ -1,51 +1,95 @@
 # 🍱 Local Food Wastage Management System
 
-## 📌 Project Overview
+## 🚀 Live Application
 
-The Local Food Wastage Management System is an end-to-end Data Analytics and Business Intelligence project designed to analyze food donation, redistribution, and claim activity across a food-sharing ecosystem.
-
-The solution integrates PostgreSQL (Neon Cloud Database), SQL, Python, Pandas, and Streamlit to transform operational data into actionable business insights through interactive dashboards and analytical reporting.
-
-The primary objective is to reduce food wastage, improve redistribution efficiency, optimize claim completion rates, and support data-driven decision-making.
+🔗 **Explore the Dashboard:**
+https://local-food-wastage-management-system-m4gt6gc6bjfa3sn5okqgf8.streamlit.app/
 
 ---
 
-# 🚀 Project Highlights
+# 🌍 Transforming Surplus Food into Actionable Impact
 
-✅ Built an end-to-end analytics solution using PostgreSQL, SQL, Python, and Streamlit
+The **Local Food Wastage Management System** is an end-to-end Data Analytics and Business Intelligence solution designed to reduce food wastage by connecting food providers with organizations and individuals in need.
 
-✅ Designed and implemented a relational database with 4 interconnected tables
+The project leverages **PostgreSQL, SQL, Python, Pandas, and Streamlit** to transform operational food redistribution data into meaningful business insights through interactive dashboards, analytical reporting, and executive-level recommendations.
 
-✅ Developed 6 interactive dashboard pages
-
-✅ Performed SQL-based business analysis using 13 analytical queries
-
-✅ Deployed data from local PostgreSQL to Neon Cloud PostgreSQL
-
-✅ Generated business recommendations to improve redistribution efficiency
+By analyzing food availability, demand patterns, claim activity, and operational performance, the platform helps stakeholders make data-driven decisions that improve redistribution efficiency and minimize food waste.
 
 ---
 
 # 🎯 Business Problem
 
-Food providers such as restaurants, supermarkets, catering services, and grocery stores frequently generate surplus food that can be redistributed to NGOs, charities, shelters, and community organizations.
+Every day, restaurants, supermarkets, catering services, and grocery stores generate surplus food that could be redistributed instead of discarded.
 
-However, inefficient claim management, delayed redistribution, and poor visibility into supply-demand patterns often lead to unnecessary food wastage.
+At the same time, NGOs, shelters, charities, and community organizations face challenges accessing available food resources.
 
-This project provides analytical dashboards and business intelligence tools to monitor:
+Without proper visibility into:
 
-* Food supply patterns
-* Receiver demand behavior
-* Claim completion performance
-* Food expiry risks
-* Provider contribution trends
-* Operational efficiency
+* Food supply
+* Receiver demand
+* Claim activity
+* Expiry risks
+* Provider performance
+
+valuable food resources are often wasted.
+
+This project addresses these challenges through a centralized analytics platform that enables efficient food redistribution and operational monitoring.
+
+---
+
+# ⭐ Project Highlights
+
+✅ Designed and implemented a relational PostgreSQL database
+
+✅ Built a complete analytics pipeline using SQL and Python
+
+✅ Developed 6 interactive business dashboards
+
+✅ Created 13 business-focused SQL analyses
+
+✅ Integrated PostgreSQL with Streamlit
+
+✅ Deployed cloud-hosted solution using Neon PostgreSQL and Streamlit Community Cloud
+
+✅ Generated executive-level business recommendations
+
+✅ Applied real-world Data Analyst and Business Intelligence workflows
+
+---
+
+# 📊 Business Questions Answered
+
+This solution helps stakeholders answer critical questions such as:
+
+### Supply Analysis
+
+* Which provider types contribute the most food?
+* Which meal categories have the highest inventory?
+* Who are the top food contributors?
+
+### Demand Analysis
+
+* Which receivers submit the most claims?
+* Which meal types generate the highest demand?
+* How is demand distributed across receiver categories?
+
+### Operations Analysis
+
+* What percentage of claims are completed successfully?
+* How close to expiry is food when claimed?
+* Which providers achieve the highest successful claim rates?
+
+### Strategic Insights
+
+* Where are operational bottlenecks occurring?
+* Which areas require process improvement?
+* How can food redistribution efficiency be increased?
 
 ---
 
 # 🛠️ Technology Stack
 
-## Programming & Analytics
+## Data Analytics
 
 * Python
 * Pandas
@@ -58,7 +102,7 @@ This project provides analytical dashboards and business intelligence tools to m
 * SQLAlchemy
 * Psycopg2
 
-## Visualization
+## Data Visualization
 
 * Streamlit
 * Matplotlib
@@ -74,9 +118,35 @@ This project provides analytical dashboards and business intelligence tools to m
 
 ---
 
+# 🏗️ Solution Architecture
+
+```text
+Raw CSV Files
+        │
+        ▼
+Data Cleaning & Validation
+        │
+        ▼
+Exploratory Data Analysis
+        │
+        ▼
+PostgreSQL Database
+        │
+        ▼
+SQL Business Analytics
+        │
+        ▼
+Interactive Streamlit Dashboards
+        │
+        ▼
+Executive Business Insights
+```
+
+---
+
 # 🗄️ Database Schema
 
-The project consists of four relational tables.
+The project uses four interconnected relational tables.
 
 ## Providers
 
@@ -127,13 +197,20 @@ The project consists of four relational tables.
 
 # 🔗 Entity Relationships
 
-Providers → Food Listings
+```text
+Providers
+    │
+    ▼
+Food Listings
+    │
+    ▼
+Claims
+    ▲
+    │
+Receivers
+```
 
-Food Listings → Claims
-
-Receivers → Claims
-
-This relational structure enables supply, demand, and operational analysis across the entire food redistribution lifecycle.
+This structure enables end-to-end analysis of the food redistribution lifecycle.
 
 ---
 
@@ -141,28 +218,30 @@ This relational structure enables supply, demand, and operational analysis acros
 
 The project analyzes:
 
-* 1,000 Providers
-* 1,000 Receivers
-* 1,000 Food Listings
-* 1,000 Claims
+| Dataset       | Records |
+| ------------- | ------- |
+| Providers     | 1,000   |
+| Receivers     | 1,000   |
+| Food Listings | 1,000   |
+| Claims        | 1,000   |
 
-Data was cleaned, validated, profiled, and loaded into PostgreSQL before analysis.
+Total records analyzed: **4,000+**
 
 ---
 
-# 🔍 SQL Analysis
+# 🔍 SQL Business Analytics
 
-A total of 13 business-focused SQL queries were developed and integrated into the SQL Explorer dashboard.
+A dedicated SQL Explorer was developed to demonstrate business-focused SQL problem solving.
 
-## Level 1 – Descriptive Analysis
+## Level 1 — Single Table Analysis
 
 1. Total Food Quantity Available
-2. City with Highest Number of Food Listings
+2. City with Highest Food Listings
 3. Most Common Food Types
-4. Claim Status Percentage Distribution
+4. Claim Status Distribution
 5. Provider Contact Lookup
 
-## Level 2 – Relational Analysis
+## Level 2 — Relational Analysis
 
 6. Food Listings by Provider
 7. Claims by Receiver
@@ -170,21 +249,19 @@ A total of 13 business-focused SQL queries were developed and integrated into th
 9. Most Claimed Meal Type
 10. Top Providers by Quantity Donated
 
-## Level 3 – Business Insights
+## Level 3 — Business Insights
 
 11. Provider with Most Successful Claims
 12. Average Quantity Claimed per Receiver
-13. Detailed Claims Analysis Report
-
-All queries can be executed directly through the SQL Explorer dashboard.
+13. Detailed Claims Performance Report
 
 ---
 
-# 📈 Dashboard Pages
+# 📈 Dashboard Modules
 
-## 1. Executive Summary Dashboard
+## 🏠 Executive Dashboard
 
-Provides a high-level overview of platform performance.
+High-level platform overview with key performance indicators.
 
 ### KPIs
 
@@ -193,25 +270,15 @@ Provides a high-level overview of platform performance.
 * Total Food Listings
 * Claim Completion Rate
 
+---
+
+## 📦 Supply Analysis
+
+Analyzes inventory availability and provider contribution trends.
+
 ### Visualizations
 
 * Provider Type Distribution
-* Claim Status Distribution
-
----
-
-## 2. Supply Analysis
-
-Analyzes food availability and provider contributions.
-
-### Features
-
-* Provider Type Filters
-* Food Type Filters
-* Meal Type Filters
-
-### Visualizations
-
 * Food Type Distribution
 * Meal Type Distribution
 * Top Providers by Quantity
@@ -219,26 +286,26 @@ Analyzes food availability and provider contributions.
 
 ---
 
-## 3. Demand Analysis
+## 🤝 Demand Analysis
 
 Analyzes receiver behavior and food demand patterns.
 
 ### Visualizations
 
-* Receiver Type Distribution
 * Claim Status Distribution
-* Meal Type Demand Analysis
+* Receiver Type Distribution
+* Claims by Meal Type
 * Top Receivers by Claims
 
 ---
 
-## 4. Operations Analysis
+## ⚙️ Operations Analysis
 
-Monitors redistribution effectiveness and food expiry risk.
+Evaluates redistribution efficiency and operational performance.
 
 ### KPIs
 
-* Claim Completion Rate
+* Completion Rate
 * Successful Claims
 * Expired Claims
 * Average Days Until Expiry
@@ -252,11 +319,9 @@ Monitors redistribution effectiveness and food expiry risk.
 
 ---
 
-## 5. SQL Explorer
+## 🗄️ SQL Explorer
 
-Interactive SQL analysis interface.
-
-### Features
+Interactive SQL analytics interface featuring:
 
 * Business Questions
 * SQL Queries
@@ -265,68 +330,102 @@ Interactive SQL analysis interface.
 
 ---
 
-## 6. Business Insights
+## 💡 Business Insights
 
-Executive-level findings and recommendations derived from:
+Executive-level recommendations generated from:
 
 * SQL Analysis
 * Exploratory Data Analysis
-* Dashboard Metrics
-* Operational Trends
+* Operational Metrics
+* Dashboard KPIs
 
 ---
 
-# 💡 Key Business Insights
+# 📈 Key Business Insights
 
-## Low Claim Completion Rate
+### Claim Completion Requires Improvement
 
-Completed Claims: 339
+Current completion rate stands at approximately **33.9%**.
 
-Completion Rate: 33.9%
-
-### Recommendation
-
-Implement automated reminders and improve claim follow-up workflows.
+**Recommendation:**
+Implement automated reminders and claim tracking workflows.
 
 ---
 
-## Breakfast Has Highest Demand
+### Breakfast Demand Is Highest
 
-Breakfast generated the highest number of claims.
+Breakfast generates the highest claim volume.
 
-### Recommendation
-
-Encourage providers to prioritize breakfast donations.
-
----
-
-## Supply-Demand Imbalance
-
-Certain meal categories experience significantly higher demand than supply.
-
-### Recommendation
-
-Align food donation campaigns with demand trends.
+**Recommendation:**
+Increase breakfast-focused food donation campaigns.
 
 ---
 
-## NGOs Drive Platform Usage
+### Supply-Demand Imbalance Exists
 
-NGOs and charitable organizations account for the largest share of claims.
+Certain food categories experience significantly higher demand than supply.
 
-### Recommendation
-
-Strengthen engagement and partnership programs.
+**Recommendation:**
+Align provider outreach initiatives with demand patterns.
 
 ---
 
-## Food Expiry Risk
+### NGOs Drive Platform Utilization
 
-Multiple claims occurred after food expiry dates.
+NGOs and charitable organizations account for a significant share of claims.
 
-### Recommendation
+**Recommendation:**
+Strengthen NGO engagement and partnership programs.
 
-Implement expiry alerts and automated claim restrictions.
+---
+
+### Food Expiry Risk Remains Significant
+
+Several claims occur close to expiry dates.
+
+**Recommendation:**
+Implement automated expiry alerts and prioritization systems.
+
+---
+
+# 🏆 Key Results
+
+* Built 6 dashboard modules
+* Developed 13 SQL business analyses
+* Integrated PostgreSQL with Streamlit
+* Created cloud-hosted analytics application
+* Generated actionable business recommendations
+* Delivered end-to-end analytics workflow
+
+---
+
+# 💼 Skills Demonstrated
+
+### Analytics
+
+* Exploratory Data Analysis (EDA)
+* Data Cleaning & Validation
+* Statistical Analysis
+
+### Database
+
+* PostgreSQL
+* SQL Query Optimization
+* Relational Database Design
+
+### Business Intelligence
+
+* KPI Development
+* Dashboard Design
+* Business Reporting
+* Data Storytelling
+
+### Development
+
+* Python
+* Streamlit
+* Git & GitHub
+* Cloud Deployment
 
 ---
 
@@ -335,33 +434,32 @@ Implement expiry alerts and automated claim restrictions.
 ```text
 local-food-wastage-management-system/
 
-│
 ├── Data/
 ├── Image/
 ├── pages/
-│
+
 ├── app.py
 ├── database.sql
 ├── queries.sql
 ├── requirements.txt
 ├── README.md
-│
+
 ├── eda.ipynb
 ├── data_cleaning.ipynb
 ├── profiling_notes.ipynb
-│
+
 ├── .gitignore
 └── .streamlit/
 ```
 
 ---
 
-# 🚀 How to Run the Project
+# 🚀 Running the Project Locally
 
 ## Clone Repository
 
 ```bash
-git clone <repository-url>
+git clone https://github.com/RajuKumar31/local-food-wastage-management-system.git
 cd local-food-wastage-management-system
 ```
 
@@ -371,9 +469,15 @@ cd local-food-wastage-management-system
 pip install -r requirements.txt
 ```
 
-## Configure Database
+## Configure Database Secrets
 
-Create a `.streamlit/secrets.toml` file:
+Create:
+
+```text
+.streamlit/secrets.toml
+```
+
+Add:
 
 ```toml
 DB_HOST="your_host"
@@ -393,32 +497,19 @@ streamlit run app.py
 
 # 👨‍💻 Author
 
-**Raju Kumar S**
+## Raju Kumar S
 
 Data Analyst | Business Analyst | Power BI Developer
 
-### Connect With Me
-
-LinkedIn:
+🔗 LinkedIn:
 https://www.linkedin.com/in/rajukumarsahani/
 
-GitHub:
+🔗 GitHub:
 https://github.com/RajuKumar31
 
-Portfolio:
+🔗 Portfolio:
 https://rajukumar31.github.io/
 
 ---
 
-## Skills Demonstrated
-
-* Data Cleaning & Validation
-* Exploratory Data Analysis (EDA)
-* Database Design
-* PostgreSQL & SQL
-* Business Intelligence
-* Data Visualization
-* Dashboard Development
-* Streamlit Deployment
-* Business Insight Generation
-* Analytical Problem Solving
+### If you found this project interesting, consider giving it a ⭐ on GitHub.
