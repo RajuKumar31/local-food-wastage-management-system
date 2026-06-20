@@ -4,8 +4,53 @@
 
 import streamlit as st
 import pandas as pd
+
 from sqlalchemy import create_engine
 
+# ============================================
+# CUSTOM CSS
+# ============================================
+
+st.markdown("""
+<style>
+
+.main {
+    background-color: #F8FAFC;
+}
+            
+/* Sidebar */
+
+[data-testid="stSidebar"]{
+    background:linear-gradient(
+        180deg,
+        #1E3A8A,
+        #2563EB
+    ) !important;
+}
+
+[data-testid="stSidebar"] *{
+    color:white !important;
+}
+
+.metric-card {
+    background:white;
+    padding:20px;
+    border-radius:15px;
+    text-align:center;
+    box-shadow:0px 5px 15px rgba(0,0,0,0.08);
+    border-top:5px solid #2563EB;
+}
+
+.chart-card {
+    background:white;
+    padding:20px;
+    border-radius:18px;
+    box-shadow:0px 8px 20px rgba(0,0,0,0.08);
+    margin-bottom:20px;
+}
+
+</style>
+""", unsafe_allow_html=True)
 
 # ============================================
 # DATABASE CONNECTION
@@ -27,7 +72,10 @@ def get_engine():
         f"?sslmode=require"
     )
 
-    return create_engine(connection_string)
+    return create_engine(
+    connection_string,
+    pool_pre_ping=True
+)
 
 # ============================================
 # QUERY RUNNER
@@ -44,17 +92,81 @@ def run_query(query):
     )
 
 # ============================================
-# PAGE TITLE
+# HERO SECTION
 # ============================================
 
-st.title("🗄️ SQL Explorer")
+st.markdown(
+    """
+    <div style="
+        background: linear-gradient(135deg,#1E3A8A,#2563EB);
+        padding:30px;
+        border-radius:20px;
+        color:white;
+        margin-bottom:25px;
+    ">
 
-st.markdown("""
-Explore all SQL analyses performed on the
-Local Food Wastage Management System database.
+    <h1>🗄️ SQL Explorer</h1>
 
-All results are generated live from PostgreSQL.
-""")
+    <p style="font-size:18px;">
+    Execute business-focused SQL analyses directly
+    from PostgreSQL and explore platform insights.
+    </p>
+
+    </div>
+    """,
+    unsafe_allow_html=True
+)
+
+# ============================================
+# KPI SECTION
+# ============================================
+
+engine = get_engine()
+
+total_queries = 13
+
+total_providers = pd.read_sql(
+    "SELECT COUNT(*) AS count FROM providers",
+    engine
+).iloc[0,0]
+
+total_receivers = pd.read_sql(
+    "SELECT COUNT(*) AS count FROM receivers",
+    engine
+).iloc[0,0]
+
+total_claims = pd.read_sql(
+    "SELECT COUNT(*) AS count FROM claims",
+    engine
+).iloc[0,0]
+
+col1, col2, col3, col4 = st.columns(4)
+
+with col1:
+    st.metric(
+        "SQL Queries",
+        total_queries
+    )
+
+with col2:
+    st.metric(
+        "Providers",
+        f"{total_providers:,}"
+    )
+
+with col3:
+    st.metric(
+        "Receivers",
+        f"{total_receivers:,}"
+    )
+
+with col4:
+    st.metric(
+        "Claims",
+        f"{total_claims:,}"
+    )
+
+st.divider()
 
 # ============================================
 # SQL QUERIES
@@ -78,7 +190,7 @@ queries = [
         "sql":
         """
         SELECT
-            SUM("Quantity") AS total_food_available
+            SUM(quantity) AS total_food_available
         FROM food_listings;
         """,
 
@@ -102,10 +214,10 @@ queries = [
         "sql":
         """
         SELECT
-            "Location",
+            location,
             COUNT(*) AS total_listings
         FROM food_listings
-        GROUP BY "Location"
+        GROUP BY location
         ORDER BY total_listings DESC
         LIMIT 1;
         """,
@@ -131,10 +243,10 @@ queries = [
         "sql":
         """
         SELECT
-            "Food_Type",
+            food_type,
             COUNT(*) AS total_listings
         FROM food_listings
-        GROUP BY "Food_Type"
+        GROUP BY food_type
         ORDER BY total_listings DESC;
         """,
 
@@ -157,7 +269,7 @@ queries = [
         "sql":
         """
         SELECT
-            "Status",
+            status,
             COUNT(*) AS total_claims,
             ROUND(
                 COUNT(*) * 100.0
@@ -165,7 +277,7 @@ queries = [
                 2
             ) AS percentage_of_claims
         FROM claims
-        GROUP BY "Status"
+        GROUP BY status
         ORDER BY total_claims DESC;
         """,
 
@@ -189,13 +301,13 @@ queries = [
         "sql":
         """
         SELECT
-            "Provider_ID",
-            "Name",
-            "Type",
-            "Contact"
+            provider_id,
+            name,
+            type,
+            contact
         FROM providers
-        WHERE "City" = 'New Carol'
-        ORDER BY "Name";
+        WHERE city = 'New Carol'
+        ORDER BY name;
         """,
 
         "insight":
@@ -221,12 +333,12 @@ queries = [
         "sql":
         """
         SELECT
-            p."Type" AS provider_type,
-            SUM(f."Quantity") AS total_quantity
+            p.type AS provider_type,
+            SUM(f.quantity) AS total_quantity
         FROM food_listings f
         JOIN providers p
-            ON f."Provider_ID" = p."Provider_ID"
-        GROUP BY p."Type"
+            ON f.provider_id = p.provider_id
+        GROUP BY p.type
         ORDER BY total_quantity DESC;
         """,
 
@@ -250,15 +362,15 @@ queries = [
         "sql":
         """
         SELECT
-            r."Name",
-            r."Type",
-            COUNT(c."Claim_ID") AS total_claims
+            r.name,
+            r.type,
+            COUNT(c.claim_id) AS total_claims
         FROM claims c
         JOIN receivers r
-            ON c."Receiver_ID" = r."Receiver_ID"
+            ON c.receiver_id = r.receiver_id
         GROUP BY
-            r."Name",
-            r."Type"
+            r.name,
+            r.type
         ORDER BY total_claims DESC
         LIMIT 10;
         """,
@@ -283,12 +395,12 @@ queries = [
         "sql":
         """
         SELECT
-            f."Food_Name",
-            COUNT(c."Claim_ID") AS total_claims
+            f.food_name,
+            COUNT(c.claim_id) AS total_claims
         FROM claims c
         JOIN food_listings f
-            ON c."Food_ID" = f."Food_ID"
-        GROUP BY f."Food_Name"
+            ON c.food_id = f.food_id
+        GROUP BY f.food_name
         ORDER BY total_claims DESC
         LIMIT 10;
         """,
@@ -313,17 +425,17 @@ queries = [
         "sql":
         """
         SELECT
-            f."Meal_Type",
-            COUNT(c."Claim_ID") AS total_claims,
+            f.meal_type,
+            COUNT(c.claim_id) AS total_claims,
             ROUND(
-                COUNT(c."Claim_ID") * 100.0
-                / SUM(COUNT(c."Claim_ID")) OVER (),
+                COUNT(c.claim_id) * 100.0
+                / SUM(COUNT(c.claim_id)) OVER (),
                 2
             ) AS percentage_of_claims
         FROM claims c
         JOIN food_listings f
-            ON c."Food_ID" = f."Food_ID"
-        GROUP BY f."Meal_Type"
+            ON c.food_id = f.food_id
+        GROUP BY f.meal_type
         ORDER BY total_claims DESC;
         """,
 
@@ -347,15 +459,15 @@ queries = [
         "sql":
         """
         SELECT
-            p."Name",
-            p."Type",
-            SUM(f."Quantity") AS total_quantity
+            p.name,
+            p.type,
+            SUM(f.quantity) AS total_quantity
         FROM food_listings f
         JOIN providers p
-            ON f."Provider_ID" = p."Provider_ID"
+            ON f.provider_id = p.provider_id
         GROUP BY
-            p."Name",
-            p."Type"
+            p."name",
+            p."type"
         ORDER BY total_quantity DESC
         LIMIT 10;
         """,
@@ -384,18 +496,18 @@ queries = [
         "sql":
         """
         SELECT
-            p."Name",
-            p."Type",
-            COUNT(c."Claim_ID") AS successful_claims
+            p.name,
+            p.type,
+            COUNT(c.claim_id) AS successful_claims
         FROM providers p
         JOIN food_listings f
-            ON p."Provider_ID" = f."Provider_ID"
+            ON p.provider_id = f.provider_id
         JOIN claims c
-            ON f."Food_ID" = c."Food_ID"
-        WHERE c."Status" = 'Completed'
+            ON f.food_id = c.food_id
+        WHERE c.status = 'Completed'
         GROUP BY
-            p."Name",
-            p."Type"
+            p.name,
+            p.type
         ORDER BY successful_claims DESC
         LIMIT 10;
         """,
@@ -420,20 +532,20 @@ queries = [
         "sql":
         """
         SELECT
-            r."Name",
-            r."Type",
+            r.name,
+            r.type,
             ROUND(
-                AVG(f."Quantity"),
+                AVG(f.quantity),
                 2
             ) AS avg_quantity_claimed
         FROM receivers r
         JOIN claims c
-            ON r."Receiver_ID" = c."Receiver_ID"
+            ON r.receiver_id = c.receiver_id
         JOIN food_listings f
-            ON c."Food_ID" = f."Food_ID"
+            ON c.food_id = f.food_id
         GROUP BY
-            r."Name",
-            r."Type"
+            r.name,
+            r.type
         ORDER BY avg_quantity_claimed DESC
         LIMIT 10;
         """,
@@ -459,27 +571,27 @@ queries = [
         """
         WITH provider_counts AS (
             SELECT
-                "City",
+                City,
                 COUNT(*) AS provider_count
             FROM providers
-            GROUP BY "City"
+            GROUP BY City
         ),
 
         receiver_counts AS (
             SELECT
-                "City",
+                City,
                 COUNT(*) AS receiver_count
             FROM receivers
-            GROUP BY "City"
+            GROUP BY City
         )
 
         SELECT
-            COALESCE(p."City", r."City") AS city,
+            COALESCE(p.City, r.City) AS city,
             COALESCE(provider_count, 0) AS provider_count,
             COALESCE(receiver_count, 0) AS receiver_count
         FROM provider_counts p
         FULL OUTER JOIN receiver_counts r
-            ON p."City" = r."City"
+            ON p.City = r.City
         ORDER BY provider_count DESC,
                  receiver_count DESC;
         """,
@@ -495,74 +607,315 @@ queries = [
 ]
 
 # ============================================
-# DISPLAY QUERIES
+# QUERY SELECTION
 # ============================================
 
-current_level = None
+st.markdown(
+    "## 📋 SQL Query Explorer"
+)
 
-for q in queries:
+query_categories = {
 
-    if current_level != q["level"]:
+    "Level 1 Queries": [
 
-        current_level = q["level"]
+        q for q in queries
 
-        st.header(current_level)
+        if q["level"] == "Level 1 Queries"
 
-    with st.expander(q["title"]):
+    ],
 
-        st.markdown(
-            f"""
-            **Business Question**
+    "Level 2 Queries": [
 
-            {q['question']}
-            """
-        )
+        q for q in queries
 
-        st.code(
-            q["sql"],
-            language="sql"
-        )
+        if q["level"] == "Level 2 Queries"
 
-        try:
+    ],
 
-            result = run_query(
-                q["sql"]
-            )
+    "Level 3 Queries": [
 
-            if q["title"] == "Query 13: Providers and Receivers by City":
+        q for q in queries
 
-                st.dataframe(
-                    result.head(20),
-                    use_container_width=True
-                )
+        if q["level"] == "Level 3 Queries"
 
-                st.caption(
-                    "Showing first 20 rows only for performance and readability."
-                )
+    ]
 
-            else:
+}
 
-                st.dataframe(
-                    result,
-                    use_container_width=True
-                )
+selected_category = st.selectbox(
+    "Select Query Category",
+    list(query_categories.keys())
+)
 
-        except Exception as e:
+selected_query = st.selectbox(
+    "Select SQL Query",
+    [
+        q["title"]
+        for q in query_categories[
+            selected_category
+        ]
+    ]
+)
 
-            st.error(
-                f"Error executing query: {e}"
-            )
+current_query = next(
 
-        st.info(
-            q["insight"]
-        )
+    q
 
-# ============================================
-# PAGE FOOTER
-# ============================================
+    for q in query_categories[
+        selected_category
+    ]
+
+    if q["title"] == selected_query
+
+)
 
 st.divider()
 
-st.success(
-    "All SQL queries are executed live from PostgreSQL."
+# ============================================
+# QUERY INFORMATION CARD
+# ============================================
+
+st.markdown(
+    f"""
+    <div style="
+        background:white;
+        padding:20px;
+        border-radius:15px;
+        box-shadow:0px 5px 15px rgba(0,0,0,0.08);
+        margin-bottom:20px;
+    ">
+
+    <h3>{current_query['title']}</h3>
+
+    <p>
+    {current_query['question']}
+    </p>
+
+    </div>
+    """,
+    unsafe_allow_html=True
 )
+
+# ============================================
+# SHOW SQL CODE
+# ============================================
+
+with st.expander(
+    "📝 View SQL Query",
+    expanded=False
+):
+
+    st.code(
+        current_query["sql"],
+        language="sql"
+    )
+
+st.divider()
+
+# ============================================
+# RUN QUERY
+# ============================================
+
+try:
+
+    result = run_query(
+        current_query["sql"]
+    )
+
+    st.markdown(
+        "## 📊 Query Results"
+    )
+
+    col1, col2 = st.columns(
+        [3,1]
+    )
+
+    with col1:
+
+        st.success(
+            f"Returned {len(result):,} rows"
+        )
+
+    with col2:
+
+        st.metric(
+            "Columns",
+            len(result.columns)
+        )
+
+    st.dataframe(
+        result,
+        use_container_width=True,
+        height=450
+    )
+
+except Exception as e:
+
+    st.error(
+        f"Query Failed: {e}"
+    )
+
+st.divider()
+
+# ============================================
+# RESULT SUMMARY
+# ============================================
+
+st.markdown(
+    "## 📈 Result Summary"
+)
+
+if "result" in locals():
+
+    col1, col2, col3 = st.columns(3)
+
+    with col1:
+
+        st.info(
+            f"Rows Returned: {len(result):,}"
+        )
+
+    with col2:
+
+        st.info(
+            f"Columns: {len(result.columns)}"
+        )
+
+    with col3:
+
+        st.info(
+            f"Query Level: {current_query['level']}"
+        )
+
+st.divider()
+
+# ============================================
+# BUSINESS INSIGHTS
+# ============================================
+
+st.markdown(
+    "## 💡 Business Insights"
+)
+
+st.markdown(
+    f"""
+    <div style="
+        background:#DBEAFE;
+        padding:20px;
+        border-radius:15px;
+        border-left:5px solid #2563EB;
+        margin-bottom:20px;
+    ">
+
+    <h4>Key Insight</h4>
+
+    <p>
+    {current_query['insight']}
+    </p>
+
+    </div>
+    """,
+    unsafe_allow_html=True
+)
+
+# ============================================
+# WHY THIS MATTERS
+# ============================================
+
+st.markdown(
+    "## 🎯 Why This Analysis Matters"
+)
+
+if current_query["level"] == 1:
+
+    st.success(
+        """
+        Level 1 queries provide foundational
+        operational visibility by analyzing
+        individual database tables.
+
+        These analyses help monitor inventory,
+        providers, receivers and claims.
+        """
+    )
+
+elif current_query["level"] == 2:
+
+    st.success(
+        """
+        Level 2 queries combine multiple
+        datasets to uncover relationships
+        between providers, food listings,
+        claims and receivers.
+
+        These analyses support business
+        decision making.
+        """
+    )
+
+else:
+
+    st.success(
+        """
+        Level 3 queries perform advanced
+        business analysis using multi-table
+        joins and aggregation logic.
+
+        These insights help evaluate
+        redistribution efficiency and
+        platform performance.
+        """
+    )
+
+st.divider()
+
+# ============================================
+# SQL SKILLS DEMONSTRATED
+# ============================================
+
+st.markdown(
+    "## 🚀 SQL Skills Demonstrated"
+)
+
+col1, col2, col3 = st.columns(3)
+
+with col1:
+
+    st.info(
+        """
+        ✅ Aggregations
+
+        SUM()
+        COUNT()
+        AVG()
+        GROUP BY
+        """
+    )
+
+with col2:
+
+    st.info(
+        """
+        ✅ Joins
+
+        INNER JOIN
+        LEFT JOIN
+        FULL OUTER JOIN
+        """
+    )
+
+with col3:
+
+    st.info(
+        """
+        ✅ Advanced SQL
+
+        Window Functions
+
+        CTEs
+
+        Business Analytics
+        """
+    )
+
+st.divider()

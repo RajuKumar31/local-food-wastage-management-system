@@ -178,8 +178,8 @@ SELECT
     f.meal_type,
     COUNT(c.claim_id) AS total_claims,
     ROUND(
-        COUNT(c.claim_id") * 100.0
-        / SUM(COUNT(c.claim_id")) OVER (),
+        COUNT(c.claim_id) * 100.0
+        / SUM(COUNT(c.claim_id)) OVER (),
         2
     ) AS percentage_of_claims
 FROM claims c

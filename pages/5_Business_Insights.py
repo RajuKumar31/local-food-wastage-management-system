@@ -10,6 +10,78 @@ import seaborn as sns
 from sqlalchemy import create_engine
 
 # ============================================
+# PAGE CONFIG
+# ============================================
+
+st.set_page_config(
+    page_title="Business Insights",
+    page_icon="📈",
+    layout="wide"
+)
+
+# ============================================
+# CUSTOM CSS
+# ============================================
+
+st.markdown("""
+<style>
+
+.stApp{
+    background-color:#F8FAFC;
+}
+
+/* Green Executive Theme */
+
+[data-testid="stSidebar"]{
+    background:linear-gradient(
+        180deg,
+        #14532D,
+        #16A34A
+    ) !important;
+}
+
+[data-testid="stSidebar"] *{
+    color:white !important;
+}
+
+.hero-card{
+    background:linear-gradient(
+        135deg,
+        #14532D,
+        #16A34A
+    );
+    padding:30px;
+    border-radius:20px;
+    color:white;
+}
+
+.metric-card{
+    background:white;
+    padding:25px;
+    border-radius:18px;
+    text-align:center;
+    box-shadow:0px 8px 20px rgba(0,0,0,0.08);
+    border-top:5px solid #16A34A;
+}
+
+.insight-card{
+    background:#F0FDF4;
+    padding:20px;
+    border-radius:15px;
+    border-left:5px solid #16A34A;
+    margin-bottom:15px;
+}
+
+.footer{
+    text-align:center;
+    color:gray;
+    padding:20px;
+}
+
+</style>
+""", unsafe_allow_html=True)
+
+# ============================================
 # DATABASE CONNECTION
 # ============================================
 
@@ -29,7 +101,9 @@ def get_engine():
         f"?sslmode=require"
     )
 
-    return create_engine(connection_string)
+    return create_engine(
+        connection_string
+    )
 
 
 # ============================================
@@ -42,22 +116,34 @@ def load_data():
     engine = get_engine()
 
     providers = pd.read_sql(
-        "SELECT * FROM providers",
+        """
+        SELECT *
+        FROM providers
+        """,
         engine
     )
 
     receivers = pd.read_sql(
-        "SELECT * FROM receivers",
+        """
+        SELECT *
+        FROM receivers
+        """,
         engine
     )
 
     food_listings = pd.read_sql(
-        "SELECT * FROM food_listings",
+        """
+        SELECT *
+        FROM food_listings
+        """,
         engine
     )
 
     claims = pd.read_sql(
-        "SELECT * FROM claims",
+        """
+        SELECT *
+        FROM claims
+        """,
         engine
     )
 
@@ -73,8 +159,37 @@ providers, receivers, food_listings, claims = load_data()
 
 
 # ============================================
+# STANDARDIZE COLUMN NAMES
+# ============================================
+
+providers.columns = (
+    providers.columns
+    .str.lower()
+)
+
+receivers.columns = (
+    receivers.columns
+    .str.lower()
+)
+
+food_listings.columns = (
+    food_listings.columns
+    .str.lower()
+)
+
+claims.columns = (
+    claims.columns
+    .str.lower()
+)
+
+# ============================================
 # DATA PREPARATION
 # ============================================
+
+providers.columns = providers.columns.str.lower()
+receivers.columns = receivers.columns.str.lower()
+food_listings.columns = food_listings.columns.str.lower()
+claims.columns = claims.columns.str.lower()
 
 claims_analysis = (
     claims
@@ -86,12 +201,15 @@ claims_analysis = (
 )
 
 completed_claims = (
-    claims["status"] == "Completed"
-).sum()
+    claims["status"]
+    .eq("Completed")
+    .sum()
+)
 
 completion_rate = (
     completed_claims
-    / len(claims)
+    /
+    len(claims)
 ) * 100
 
 total_food_available = (
@@ -117,7 +235,7 @@ expiry_analysis = (
     claims
     .merge(
         food_listings[
-            ["food_id", "expiry_date"]
+            ["food_id","expiry_date"]
         ],
         on="food_id",
         how="left"
@@ -126,64 +244,182 @@ expiry_analysis = (
 
 expiry_analysis["days_until_expiry"] = (
     expiry_analysis["expiry_date"]
-    - expiry_analysis["timestamp"]
+    -
+    expiry_analysis["timestamp"]
 ).dt.days
 
 avg_days_until_expiry = (
-    expiry_analysis["days_until_expiry"]
-    .mean()
+    expiry_analysis[
+        "days_until_expiry"
+    ].mean()
 )
-
-
 # ============================================
-# PAGE TITLE
+# HERO SECTION
 # ============================================
 
-st.title("📈 Business Insights")
+st.markdown("""
+<div class="hero-card">
 
-st.markdown(
-    """
-    Executive-level insights and strategic
-    recommendations derived from the analysis
-    of food donations, claims and platform operations.
-    """
-)
+<h1>📈 Business Insights & Strategic Recommendations</h1>
 
-st.divider()
+<p style="font-size:18px;">
+Executive dashboard summarizing food supply,
+receiver demand, operational performance,
+and platform-wide business opportunities.
+</p>
 
+</div>
+""", unsafe_allow_html=True)
+
+st.write("")
 
 # ============================================
-# KPI CARDS
+# KPI CARD FUNCTION
+# ============================================
+
+def metric_card(
+    title,
+    value,
+    emoji
+):
+
+    st.markdown(
+        f"""
+        <div class="metric-card">
+
+        <h1>{emoji}</h1>
+
+        <h2>{value}</h2>
+
+        <p>{title}</p>
+
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+# ============================================
+# KPI SECTION
 # ============================================
 
 col1, col2, col3, col4 = st.columns(4)
 
 with col1:
 
+    metric_card(
+        "Food Available",
+        f"{int(total_food_available):,}",
+        "🍱"
+    )
+
+with col2:
+
+    metric_card(
+        "Completion Rate",
+        f"{completion_rate:.1f}%",
+        "✅"
+    )
+
+with col3:
+
+    metric_card(
+        "Top Meal Type",
+        top_meal_type,
+        "🥗"
+    )
+
+with col4:
+
+    metric_card(
+        "Avg Days To Expiry",
+        f"{avg_days_until_expiry:.1f}",
+        "📅"
+    )
+
+st.write("")
+
+st.divider()
+
+# ============================================
+# EXECUTIVE OVERVIEW
+# ============================================
+
+st.markdown(
+    "## 📊 Executive Overview"
+)
+
+col1, col2 = st.columns(
+    [2,1]
+)
+
+with col1:
+
+    st.info(
+        """
+        This page consolidates findings from:
+
+        • Supply Analysis
+
+        • Demand Analysis
+
+        • Operations Analysis
+
+        • SQL Analytics
+
+        into a single executive summary for
+        business decision-making.
+        """
+    )
+
+with col2:
+
+    st.success(
+        f"""
+        Platform Health Score
+
+        Completion Rate:
+        {completion_rate:.1f}%
+        """
+    )
+
+st.divider()
+
+# ============================================
+# BUSINESS SNAPSHOT
+# ============================================
+
+st.markdown(
+    "## 🚀 Business Snapshot"
+)
+
+col1, col2, col3, col4 = st.columns(4)
+
+with col1:
+
     st.metric(
-        "Total Food Available",
-        f"{total_food_available:,}"
+        "Providers",
+        f"{len(providers):,}"
     )
 
 with col2:
 
     st.metric(
-        "Completion Rate",
-        f"{completion_rate:.1f}%"
+        "Receivers",
+        f"{len(receivers):,}"
     )
 
 with col3:
 
     st.metric(
-        "Top Claimed Meal Type",
-        top_meal_type
+        "Food Listings",
+        f"{len(food_listings):,}"
     )
 
 with col4:
 
     st.metric(
-        "Avg Days Until Expiry",
-        f"{avg_days_until_expiry:.1f}"
+        "Claims",
+        f"{len(claims):,}"
     )
 
 st.divider()
@@ -192,167 +428,213 @@ st.divider()
 # TOP BUSINESS FINDINGS
 # ============================================
 
-st.subheader("🏆 Top Business Findings")
+st.markdown(
+    "## 🏆 Executive Business Findings"
+)
 
-st.success("""
-**1. Only 33.9% of claims were successfully completed**
+st.markdown(
+    """
+    <div class="insight-card">
 
-Source:
-• EDA Chart 5
-• SQL Query 4
+    <h4>1️⃣ Claim Completion Performance</h4>
 
-Business Impact:
-A significant proportion of food requests are either
-cancelled or remain unresolved, representing lost
-redistribution opportunities.
+    <p>
 
-Recommended Action:
-Investigate operational bottlenecks causing claim
-cancellations and delayed processing.
-""")
+    Only <b>33.9%</b> of claims were successfully completed.
 
-st.success("""
-**2. Breakfast demand exceeds supply**
+    This indicates substantial operational inefficiencies
+    between food availability and successful redistribution.
 
-Source:
-• EDA Chart 4
-• EDA Chart 9
-• SQL Query 9
+    </p>
 
-Finding:
-Breakfast generated 278 claims from only
-254 available listings.
+    </div>
+    """,
+    unsafe_allow_html=True
+)
 
-Business Impact:
-Breakfast appears to be the highest-demand
-meal category on the platform.
+st.markdown(
+    """
+    <div class="insight-card">
 
-Recommended Action:
-Encourage providers to donate more breakfast
-items to better align supply with demand.
-""")
+    <h4>2️⃣ Breakfast Demand Exceeds Supply</h4>
 
-st.success("""
-**3. Restaurants contribute the highest food volume**
+    <p>
 
-Source:
-• SQL Query 6
-• SQL Query 10
+    Breakfast generated the highest number of claims
+    across all meal categories.
 
-Finding:
-Restaurants contributed 6,923 units of food,
-the highest among all provider categories.
+    Demand is growing faster than available inventory,
+    creating a supply-demand imbalance.
 
-Business Impact:
-Restaurants are the platform's most important
-supply-side partners.
+    </p>
 
-Recommended Action:
-Strengthen restaurant partnerships and create
-incentive programs for repeat donations.
-""")
+    </div>
+    """,
+    unsafe_allow_html=True
+)
 
-st.success("""
-**4. Claim activity is broadly distributed**
+st.markdown(
+    """
+    <div class="insight-card">
 
-Source:
-• EDA Chart 7
-• SQL Query 7
+    <h4>3️⃣ Restaurants Drive Food Supply</h4>
 
-Finding:
-The most active receivers submitted only
-4–5 claims each.
+    <p>
 
-Business Impact:
-No single receiver dominates platform usage,
-indicating relatively balanced access to food
-redistribution services.
+    Restaurants contribute the largest share of food
+    donations and remain the most valuable provider
+    segment on the platform.
 
-Recommended Action:
-Continue monitoring equitable food distribution
-across all receiver groups.
-""")
+    </p>
 
-st.success("""
-**5. Expiry management presents operational risk**
+    </div>
+    """,
+    unsafe_allow_html=True
+)
 
-Source:
-• EDA Chart 8
-• Operations Analysis
+st.markdown(
+    """
+    <div class="insight-card">
 
-Finding:
-55 claims (5.5%) occurred after the food expiry date,
-including 15 completed claims.
+    <h4>4️⃣ Food Distribution Is Well Balanced</h4>
 
-Business Impact:
-This indicates food is occasionally being redistributed
-beyond its intended expiry window, creating potential
-food safety and compliance concerns.
+    <p>
 
-Recommended Action:
-Implement automated expiry alerts, prioritize
-near-expiry inventory, and prevent claims on
-already expired food items.
-""")
+    Receiver activity is broadly distributed across
+    charities, NGOs and community organizations.
+
+    No single receiver dominates claim activity.
+
+    </p>
+
+    </div>
+    """,
+    unsafe_allow_html=True
+)
+
+st.markdown(
+    """
+    <div class="insight-card">
+
+    <h4>5️⃣ Expiry Risk Requires Attention</h4>
+
+    <p>
+
+    Several claims occur very close to food expiry
+    deadlines, creating operational and compliance
+    risks.
+
+    Automated expiry monitoring should be prioritized.
+
+    </p>
+
+    </div>
+    """,
+    unsafe_allow_html=True
+)
 
 st.divider()
-
 
 # ============================================
 # STRATEGIC RECOMMENDATIONS
 # ============================================
 
-st.subheader("📌 Strategic Recommendations")
+st.markdown(
+    "## 📌 Strategic Recommendations"
+)
 
 col1, col2 = st.columns(2)
 
 with col1:
 
-    st.info("""
-### Recommendation 1
+    st.markdown(
+        """
+        <div class="insight-card">
 
-**Improve Claim Completion Rates**
+        <h4>🎯 Improve Claim Completion Rates</h4>
 
-Focus on reducing cancellation rates through
-better communication between providers and
-receivers and faster claim processing.
-""")
+        <p>
 
-    st.info("""
-### Recommendation 2
+        Reduce cancellation rates by improving
+        communication between providers and
+        receivers.
 
-**Increase Breakfast Inventory**
+        Introduce claim reminders and SLA-based
+        claim resolution tracking.
 
-Breakfast demand consistently exceeds supply.
+        </p>
 
-Target providers with breakfast-focused donation
-campaigns to improve fulfillment rates.
-""")
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+    st.markdown(
+        """
+        <div class="insight-card">
+
+        <h4>🥞 Increase Breakfast Inventory</h4>
+
+        <p>
+
+        Breakfast demand consistently exceeds
+        available inventory.
+
+        Launch provider campaigns focused on
+        breakfast donations to improve
+        fulfillment rates.
+
+        </p>
+
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
 
 with col2:
 
-    st.info("""
-### Recommendation 3
+    st.markdown(
+        """
+        <div class="insight-card">
 
-**Expand Restaurant Partnerships**
+        <h4>🏢 Strengthen Restaurant Partnerships</h4>
 
-Restaurants contribute the largest quantity
-of food and represent the highest-impact
-donor segment.
+        <p>
 
-Develop retention and recognition programs
-for top-performing providers.
-""")
+        Restaurants contribute the largest
+        quantity of food donations.
 
-    st.info("""
-### Recommendation 4
+        Develop recognition programs and
+        long-term partnerships to increase
+        contribution volume.
 
-**Implement Expiry Monitoring**
+        </p>
 
-Introduce automated alerts for food nearing
-expiry to improve redistribution efficiency
-and reduce waste.
-""")
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+    st.markdown(
+        """
+        <div class="insight-card">
+
+        <h4>⏰ Implement Expiry Monitoring</h4>
+
+        <p>
+
+        Introduce automated alerts for food
+        approaching expiry.
+
+        Prioritize near-expiry inventory to
+        maximize successful redistribution.
+
+        </p>
+
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
 
 st.divider()
 
@@ -360,17 +642,21 @@ st.divider()
 # SUPPORTING VISUALS
 # ============================================
 
-st.subheader("📊 Supporting Visuals")
+st.markdown(
+    "## 📊 Supporting Visual Analytics"
+)
 
 col1, col2 = st.columns(2)
 
-# --------------------------------------------
-# Claim Status Distribution
-# --------------------------------------------
+# ============================================
+# CLAIM STATUS DISTRIBUTION
+# ============================================
 
 with col1:
 
-    st.markdown("### Claim Status Distribution")
+    st.markdown(
+        "### Claim Status Distribution"
+    )
 
     status_counts = (
         claims["status"]
@@ -384,39 +670,52 @@ with col1:
     ]
 
     fig, ax = plt.subplots(
-        figsize=(7, 4)
+        figsize=(7,5)
     )
 
     sns.barplot(
         data=status_counts,
         x="Status",
         y="Count",
-        hue="Status",
-        palette="Oranges",
-        legend=False,
+        palette="Greens",
         ax=ax
     )
 
-    ax.set_xlabel("Claim Status")
-    ax.set_ylabel("Number of Claims")
-
     for container in ax.containers:
-        ax.bar_label(container)
+        ax.bar_label(
+            container,
+            padding=3
+        )
 
-    plt.tight_layout()
+    ax.set_xlabel(
+        "Claim Status"
+    )
+
+    ax.set_ylabel(
+        "Number of Claims"
+    )
+
+    ax.set_title(
+        "Claim Completion Overview",
+        fontsize=13,
+        fontweight="bold"
+    )
+
+    sns.despine()
 
     st.pyplot(fig)
 
     plt.close()
 
-
-# --------------------------------------------
-# Claims by Meal Type
-# --------------------------------------------
+# ============================================
+# CLAIMS BY MEAL TYPE
+# ============================================
 
 with col2:
 
-    st.markdown("### Claims by Meal Type")
+    st.markdown(
+        "### Claims by Meal Type"
+    )
 
     meal_claims = (
         claims_analysis["meal_type"]
@@ -425,31 +724,43 @@ with col2:
     )
 
     meal_claims.columns = [
-        "meal_type",
-        "claims"
+        "Meal Type",
+        "Claims"
     ]
 
     fig, ax = plt.subplots(
-        figsize=(7, 4)
+        figsize=(7,5)
     )
 
     sns.barplot(
         data=meal_claims,
-        x="meal_type",
-        y="claims",
-        hue="meal_type",
-        palette="YlOrBr",
-        legend=False,
+        x="Meal Type",
+        y="Claims",
+        palette="YlGn",
         ax=ax
     )
 
-    ax.set_xlabel("Meal Type")
-    ax.set_ylabel("Claims")
-
     for container in ax.containers:
-        ax.bar_label(container)
+        ax.bar_label(
+            container,
+            padding=3
+        )
 
-    plt.tight_layout()
+    ax.set_xlabel(
+        "Meal Type"
+    )
+
+    ax.set_ylabel(
+        "Claims"
+    )
+
+    ax.set_title(
+        "Demand by Meal Category",
+        fontsize=13,
+        fontweight="bold"
+    )
+
+    sns.despine()
 
     st.pyplot(fig)
 
@@ -457,77 +768,253 @@ with col2:
 
 st.divider()
 
+# ============================================
+# EXECUTIVE PERFORMANCE DASHBOARD
+# ============================================
+
+st.markdown(
+    "## 🚀 Executive Performance Dashboard"
+)
+
+col1, col2, col3 = st.columns(3)
+
+with col1:
+
+    st.metric(
+        "Completion Rate",
+        f"{completion_rate:.1f}%"
+    )
+
+with col2:
+
+    st.metric(
+        "Food Listings",
+        f"{len(food_listings):,}"
+    )
+
+with col3:
+
+    st.metric(
+        "Claims Processed",
+        f"{len(claims):,}"
+    )
+
+st.divider()
 
 # ============================================
 # EXECUTIVE SUMMARY
 # ============================================
 
-st.subheader("📋 Executive Summary")
+st.markdown(
+    "## 📋 Executive Summary"
+)
 
-st.markdown("""
-### Key Takeaways
+st.markdown(
+    """
+    <div class="insight-card">
 
-**Food Supply**
-- The platform contains **25,794 food units** available for redistribution.
-- Food availability is relatively balanced across Vegetarian, Vegan, and Non-Vegetarian categories.
-- Restaurants are the largest contributors, supplying **6,923 food units**.
+    <h4>Platform Performance Overview</h4>
 
-**Food Demand**
-- Breakfast is the most requested meal category with **278 claims**.
-- Rice is the most frequently claimed food item.
-- Receiver activity is broadly distributed, with no dominant beneficiary.
+    <p>
 
-**Operational Performance**
-- Only **33.9%** of claims were completed successfully.
-- Expiry management remains an operational challenge.
-- A meaningful portion of claims occur close to expiry deadlines.
+    The Local Food Wastage Management System
+    successfully connects food providers and
+    receivers through a centralized food
+    redistribution platform.
 
-**Platform Health**
-- Supply and demand are both active and well-distributed.
-- The biggest opportunity lies in improving claim completion and reducing food waste caused by late claims.
-""")
+    Analysis indicates healthy participation
+    from both supply and demand stakeholders,
+    with strong provider diversity and balanced
+    receiver engagement.
+
+    </p>
+
+    </div>
+    """,
+    unsafe_allow_html=True
+)
+
+st.markdown(
+    """
+    <div class="insight-card">
+
+    <h4>Key Business Outcomes</h4>
+
+    <p>
+
+    • Strong provider participation across all categories
+
+    • Restaurants contribute the highest food volume
+
+    • Breakfast demand exceeds available inventory
+
+    • Food distribution remains equitable across receivers
+
+    • Completion rates require operational improvement
+
+    </p>
+
+    </div>
+    """,
+    unsafe_allow_html=True
+)
+
+st.markdown(
+    """
+    <div class="insight-card">
+
+    <h4>Operational Priorities</h4>
+
+    <p>
+
+    The greatest opportunities for improvement
+    lie in increasing claim completion rates,
+    reducing expiry-related losses, and
+    improving redistribution efficiency.
+
+    </p>
+
+    </div>
+    """,
+    unsafe_allow_html=True
+)
 
 st.divider()
-
 
 # ============================================
 # PROJECT CONCLUSION
 # ============================================
 
-st.subheader("🎯 Project Conclusion")
+st.markdown(
+    "## 🎯 Project Conclusion"
+)
 
-st.info("""
-The Local Food Wastage Management System project
-demonstrates how data analytics can support food
-redistribution efforts by connecting providers and
-receivers through a centralized platform.
+st.success(
+    """
+    The Local Food Wastage Management System
+    demonstrates how data analytics can be
+    leveraged to reduce food waste and improve
+    food accessibility.
 
-Using PostgreSQL, SQL, Python, Pandas,
-Matplotlib, Seaborn, and Streamlit, the project
-identified supply trends, demand patterns,
-operational bottlenecks, and opportunities to
-improve food recovery efficiency.
+    Technologies Used:
 
-Key outcomes include:
+    ✅ PostgreSQL
 
-• Identification of high-performing provider groups
-• Analysis of receiver engagement patterns
-• Measurement of claim completion performance
-• Detection of supply-demand imbalances
-• Monitoring of expiry-related operational risks
+    ✅ SQL
 
-The dashboard provides a foundation for data-driven
-decision-making that can help reduce food waste and
-improve food accessibility.
-""")
+    ✅ Python
+
+    ✅ Pandas
+
+    ✅ Matplotlib
+
+    ✅ Seaborn
+
+    ✅ Streamlit
+
+    Key Deliverables:
+
+    ✅ Exploratory Data Analysis (EDA)
+
+    ✅ SQL Business Analytics
+
+    ✅ Supply Analysis Dashboard
+
+    ✅ Demand Analysis Dashboard
+
+    ✅ Operations Analysis Dashboard
+
+    ✅ Executive Business Insights Dashboard
+
+    This project provides a scalable foundation
+    for data-driven food redistribution and
+    operational decision-making.
+    """
+)
 
 st.divider()
 
+# ============================================
+# PROJECT ACHIEVEMENTS
+# ============================================
+
+st.markdown(
+    "## 🏆 Project Achievements"
+)
+
+col1, col2, col3 = st.columns(3)
+
+with col1:
+
+    st.metric(
+        "EDA Visualizations",
+        "9"
+    )
+
+with col2:
+
+    st.metric(
+        "SQL Queries",
+        "13"
+    )
+
+with col3:
+
+    st.metric(
+        "Dashboard Pages",
+        "5"
+    )
+
+st.divider()
 
 # ============================================
-# DASHBOARD FOOTER
+# FINAL RECOMMENDATION
 # ============================================
 
-st.success(
-    "✅ Dashboard Complete | PostgreSQL + SQL + Python + Streamlit + Business Analytics"
+st.markdown(
+    "## 🚀 Final Recommendation"
+)
+
+st.info(
+    """
+    Focus future platform improvements on:
+
+    • Increasing claim completion rates
+
+    • Expanding breakfast inventory
+
+    • Strengthening restaurant partnerships
+
+    • Implementing real-time expiry monitoring
+
+    • Enhancing redistribution efficiency
+
+    These initiatives will maximize food recovery,
+    reduce waste, and improve overall platform impact.
+    """
+)
+
+st.divider()
+
+# ============================================
+# FOOTER
+# ============================================
+
+st.markdown(
+    """
+    <div class="footer">
+
+    <h4>🍱 Local Food Wastage Management System</h4>
+
+    Built by <b>Raju Kumar S</b><br>
+
+    Data Analyst | SQL | Power BI | Python | Streamlit
+
+    <br><br>
+
+    © 2026 | Business Analytics Portfolio Project
+
+    </div>
+    """,
+    unsafe_allow_html=True
 )

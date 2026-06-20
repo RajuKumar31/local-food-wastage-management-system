@@ -7,8 +7,102 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-from sqlalchemy import create_engine, text
+from sqlalchemy import (
+    create_engine,
+    text
+)
 
+# ============================================
+# PAGE CONFIG
+# ============================================
+
+st.set_page_config(
+    page_title="Operations Analysis",
+    page_icon="⚙️",
+    layout="wide"
+)
+
+# ============================================
+# CUSTOM CSS
+# ============================================
+
+st.markdown("""
+<style>
+
+/* Main App */
+
+.stApp{
+    background-color:#F8FAFC;
+}
+
+/* Sidebar */
+
+[data-testid="stSidebar"]{
+    background:linear-gradient(
+        180deg,
+        #1E3A8A,
+        #2563EB
+    ) !important;
+}
+
+[data-testid="stSidebar"] *{
+    color:white !important;
+}
+
+/* KPI Cards */
+
+.metric-card{
+    background:white;
+    padding:25px;
+    border-radius:18px;
+    text-align:center;
+    box-shadow:0px 8px 20px rgba(0,0,0,0.08);
+    border-top:5px solid #2563EB;
+}
+
+/* Hero */
+
+.hero-card{
+    background:linear-gradient(
+        135deg,
+        #1E3A8A,
+        #2563EB
+    );
+    padding:30px;
+    border-radius:20px;
+    color:white;
+}
+
+/* Charts */
+
+.chart-card{
+    background:white;
+    padding:20px;
+    border-radius:18px;
+    box-shadow:0px 8px 20px rgba(0,0,0,0.08);
+    margin-bottom:20px;
+}
+
+/* Insights */
+
+.insight-card{
+    background:#DBEAFE;
+    padding:20px;
+    border-radius:15px;
+    border-left:5px solid #2563EB;
+}
+
+/* Recommendations */
+
+.recommendation-card{
+    background:#FEF3C7;
+    padding:20px;
+    border-radius:15px;
+    border-left:5px solid #F59E0B;
+}
+
+</style>
+""", unsafe_allow_html=True)
 
 # ============================================
 # DATABASE CONNECTION
@@ -30,11 +124,11 @@ def get_engine():
         f"?sslmode=require"
     )
 
-    return create_engine(connection_string)
-
+    return create_engine(
+        connection_string
+    )
 
 engine = get_engine()
-
 
 # ============================================
 # LOAD DATA
@@ -65,34 +159,66 @@ def load_operations_data():
         engine
     )
 
-    return claims, food_listings, providers, receivers
+    return (
+        claims,
+        food_listings,
+        providers,
+        receivers
+    )
 
-
-claims, food_listings, providers, receivers = load_operations_data()
-
+claims, food_listings, providers, receivers = (
+    load_operations_data()
+)
 
 # ============================================
-# MERGED DATASET
+# CREATE ANALYSIS DATASET
 # ============================================
 
 claims_analysis = (
+
     claims
+
     .merge(
         food_listings,
         on="food_id",
         how="left"
     )
+
     .merge(
         providers,
         on="provider_id",
         how="left",
-        suffixes=("", "_Provider")
+        suffixes=(
+            "",
+            "_provider"
+        )
     )
+
     .merge(
         receivers,
         on="receiver_id",
         how="left",
-        suffixes=("", "_Receiver")
+        suffixes=(
+            "",
+            "_receiver"
+        )
+    )
+
+)
+
+# ============================================
+# DATE CONVERSION
+# ============================================
+
+claims_analysis["expiry_date"] = (
+    pd.to_datetime(
+        claims_analysis["expiry_date"]
+    )
+)
+
+claims_analysis["timestamp"] = (
+    pd.to_datetime(
+        claims_analysis["timestamp"]
     )
 )
 
@@ -100,237 +226,492 @@ claims_analysis = (
 # DAYS UNTIL EXPIRY
 # ============================================
 
-claims_analysis["expiry_date"] = pd.to_datetime(
-    claims_analysis["expiry_date"]
-)
-
-claims_analysis["timestamp"] = pd.to_datetime(
-    claims_analysis["timestamp"]
-)
-
 claims_analysis["days_until_expiry"] = (
+
     claims_analysis["expiry_date"]
-    - claims_analysis["timestamp"]
+
+    -
+
+    claims_analysis["timestamp"]
+
 ).dt.days
 
-
 # ============================================
-# PAGE TITLE
+# DATA VALIDATION
 # ============================================
 
-st.title("⚙️ Operations Analysis")
-
-st.markdown(
-    """
-    Monitor platform efficiency,
-    claim performance and food redistribution effectiveness.
-    """
+claims_analysis = (
+    claims_analysis
+    .dropna(
+        subset=[
+            "status",
+            "days_until_expiry"
+        ]
+    )
 )
 
+claims_analysis.reset_index(
+    drop=True,
+    inplace=True
+)
 
 # ============================================
-# KPI CARDS
+# HERO SECTION
+# ============================================
+
+st.markdown("""
+<div class="hero-card">
+
+<h1>⚙️ Operations Analysis</h1>
+
+<p style="font-size:18px;">
+Monitor operational efficiency, claim performance,
+expiry risk and food redistribution effectiveness.
+</p>
+
+</div>
+""", unsafe_allow_html=True)
+
+st.write("")
+
+# ============================================
+# KPI CALCULATIONS
 # ============================================
 
 completion_rate = (
-    (
-        claims_analysis["status"] == "Completed"
-    ).mean() * 100
-)
 
-expired_claims = (
-    claims_analysis["days_until_expiry"] < 0
-).sum()
+    (
+        claims_analysis["status"]
+        ==
+        "Completed"
+    ).mean()
+
+) * 100
 
 successful_claims = (
-    claims_analysis["status"] == "Completed"
+
+    claims_analysis["status"]
+    ==
+    "Completed"
+
+).sum()
+
+expired_claims = (
+
+    claims_analysis["days_until_expiry"]
+    < 0
+
 ).sum()
 
 avg_days = (
+
     claims_analysis["days_until_expiry"]
     .mean()
+
 )
+
+# ============================================
+# KPI CARD FUNCTION
+# ============================================
+
+def metric_card(
+    title,
+    value,
+    emoji
+):
+
+    st.markdown(
+        f"""
+        <div class="metric-card">
+
+        <h1>{emoji}</h1>
+
+        <h2>{value}</h2>
+
+        <p>{title}</p>
+
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+# ============================================
+# KPI ROW
+# ============================================
 
 col1, col2, col3, col4 = st.columns(4)
 
 with col1:
-    st.metric(
+
+    metric_card(
         "Completion Rate",
-        f"{completion_rate:.1f}%"
+        f"{completion_rate:.1f}%",
+        "✅"
     )
 
 with col2:
-    st.metric(
+
+    metric_card(
         "Successful Claims",
-        f"{successful_claims:,}"
+        f"{successful_claims:,}",
+        "📦"
     )
 
 with col3:
-    st.metric(
+
+    metric_card(
         "Expired Claims",
-        expired_claims
+        f"{expired_claims:,}",
+        "⚠️"
     )
 
 with col4:
-    st.metric(
-        "Avg Days Until Expiry",
-        f"{avg_days:.1f}"
+
+    metric_card(
+        "Avg Days To Expiry",
+        f"{avg_days:.1f}",
+        "📅"
+    )
+
+st.write("")
+
+st.divider()
+
+# ============================================
+# OPERATIONS OVERVIEW
+# ============================================
+
+st.markdown(
+    "## 📊 Operations Overview"
+)
+
+col1, col2 = st.columns(
+    [2,1]
+)
+
+with col1:
+
+    st.info(
+        """
+        This dashboard evaluates platform
+        efficiency, food expiry risk,
+        claim success rates and operational
+        performance across providers and receivers.
+        """
+    )
+
+with col2:
+
+    st.success(
+        f"Overall Completion Rate: {completion_rate:.1f}%"
     )
 
 st.divider()
 
+# ============================================
+# FOOD EXPIRY RISK ANALYSIS
+# ============================================
 
-# ============================================
-# ROW 1
-# ============================================
+st.markdown(
+    "## ⚠️ Food Expiry Risk Analysis"
+)
 
 col1, col2 = st.columns(2)
 
+# ============================================
+# DAYS UNTIL EXPIRY DISTRIBUTION
+# ============================================
 
-# Days Until Expiry Histogram
 with col1:
 
-    st.subheader(
-        "Days Until Expiry Distribution"
+    st.markdown(
+        "### 📅 Days Until Expiry Distribution"
     )
 
-    fig, ax = plt.subplots(figsize=(8, 5))
+    fig, ax = plt.subplots(
+        figsize=(8,5)
+    )
 
     sns.histplot(
         data=claims_analysis,
         x="days_until_expiry",
         bins=20,
         kde=True,
-        color="steelblue",
+        color="#2563EB",
         ax=ax
     )
 
     ax.axvline(
-        0,
+        x=0,
         color="red",
         linestyle="--",
-        linewidth=2,
-        label="Expiry Boundary"
+        linewidth=2
     )
 
-    ax.legend()
+    ax.set_xlabel(
+        "Days Until Expiry"
+    )
 
-    plt.tight_layout()
+    ax.set_ylabel(
+        "Number of Claims"
+    )
+
+    sns.despine()
 
     st.pyplot(fig)
 
     plt.close()
 
+    st.caption(
+        "Claims occurring after the red line represent expired food listings."
+    )
 
-# Completion Rate by Receiver Type
+# ============================================
+# EXPIRY RISK BREAKDOWN
+# ============================================
+
 with col2:
 
-    st.subheader(
-        "Completion Rate by Receiver Type"
+    st.markdown(
+        "### 🚨 Expiry Risk Breakdown"
     )
 
-    total_claims = (
-        claims_analysis
-        .groupby("type")["claim_id"]
-        .count()
-        .reset_index(name="Total_Claims")
-    )
+    expiry_summary = pd.DataFrame({
 
-    completed_claims = (
-        claims_analysis[
-            claims_analysis["status"] == "Completed"
+        "Category": [
+            "Safe",
+            "Near Expiry",
+            "Expired"
+        ],
+
+        "Count": [
+
+            len(
+                claims_analysis[
+                    claims_analysis[
+                        "days_until_expiry"
+                    ] > 3
+                ]
+            ),
+
+            len(
+                claims_analysis[
+                    (
+                        claims_analysis[
+                            "days_until_expiry"
+                        ] >= 0
+                    )
+                    &
+                    (
+                        claims_analysis[
+                            "days_until_expiry"
+                        ] <= 3
+                    )
+                ]
+            ),
+
+            len(
+                claims_analysis[
+                    claims_analysis[
+                        "days_until_expiry"
+                    ] < 0
+                ]
+            )
+
         ]
-        .groupby("type")["claim_id"]
-        .count()
-        .reset_index(name="Completed_Claims")
-    )
 
-    completion_df = (
-        total_claims
-        .merge(
-            completed_claims,
-            on="type"
-        )
-    )
+    })
 
-    completion_df["Completion_Rate"] = (
-        completion_df["Completed_Claims"]
-        /
-        completion_df["Total_Claims"]
-        * 100
+    fig, ax = plt.subplots(
+        figsize=(8,5)
     )
-
-    fig, ax = plt.subplots(figsize=(8, 5))
 
     sns.barplot(
-        data=completion_df,
-        x="type",
-        y="Completion_Rate",
-        hue="type",
-        palette="Greens",
+        data=expiry_summary,
+        x="Category",
+        y="Count",
+        hue="Category",
+        palette="Blues_r",
         legend=False,
         ax=ax
     )
 
     for container in ax.containers:
-        ax.bar_label(
-            container,
-            fmt="%.1f"
-        )
+        ax.bar_label(container)
 
-    ax.set_ylabel("Completion Rate (%)")
-
-    plt.tight_layout()
+    sns.despine()
 
     st.pyplot(fig)
 
     plt.close()
 
+    st.caption(
+        "Categorization of food listings based on expiry risk."
+    )
 
 st.divider()
 
+# ============================================
+# RECEIVER PERFORMANCE ANALYSIS
+# ============================================
+
+st.markdown(
+    "## 🤝 Receiver Performance Analysis"
+)
+
+receiver_performance = (
+
+    claims_analysis
+
+    .groupby("type_receiver")
+
+    .agg(
+        total_claims=(
+            "claim_id",
+            "count"
+        ),
+        completed_claims=(
+            "status",
+            lambda x:
+            (
+                x == "Completed"
+            ).sum()
+        )
+    )
+
+    .reset_index()
+
+)
+
+receiver_performance[
+    "completion_rate"
+] = (
+
+    receiver_performance[
+        "completed_claims"
+    ]
+
+    /
+
+    receiver_performance[
+        "total_claims"
+    ]
+
+) * 100
+
+fig, ax = plt.subplots(
+    figsize=(10,5)
+)
+
+sns.barplot(
+    data=receiver_performance,
+    x="type_receiver",
+    y="completion_rate",
+    hue="type_receiver",
+    palette="crest",
+    legend=False,
+    ax=ax
+)
+
+ax.set_ylabel(
+    "Completion Rate (%)"
+)
+
+ax.set_xlabel("")
+
+for container in ax.containers:
+    ax.bar_label(
+        container,
+        fmt="%.1f"
+    )
+
+sns.despine()
+
+st.pyplot(fig)
+
+plt.close()
+
+st.caption(
+    "Completion rates by receiver category."
+)
+
+st.divider()
 
 # ============================================
-# ROW 2
+# PROVIDER PERFORMANCE ANALYSIS
 # ============================================
+
+st.markdown(
+    "## 🏢 Provider Performance Analysis"
+)
 
 col1, col2 = st.columns(2)
 
+# ============================================
+# TOP PROVIDERS BY SUCCESSFUL CLAIMS
+# ============================================
 
-# Top Providers by Successful Claims
 with col1:
 
-    st.subheader(
-        "Top 10 Providers by Successful Claims"
+    st.markdown(
+        "### 🏆 Top Providers by Successful Claims"
     )
 
+    # Count completed claims by provider
+
     provider_success = (
+
         claims_analysis[
             claims_analysis["status"] == "Completed"
         ]
-        .groupby(
-            ["provider_id", "name"]
-        )["claim_id"]
+
+        .groupby("provider_id")["claim_id"]
+
         .count()
-        .reset_index(name="successful_claims")
+
+        .reset_index()
+
     )
+
+    provider_success.columns = [
+        "provider_id",
+        "Successful Claims"
+    ]
+
+    # Merge provider names
+
+    provider_success = provider_success.merge(
+        providers[
+            ["provider_id", "name"]
+        ],
+        on="provider_id",
+        how="left"
+    )
+
+    # Top 10 providers
 
     provider_success = (
+
         provider_success
+
         .nlargest(
             10,
-            "successful_claims"
+            "Successful Claims"
         )
+
         .sort_values(
-            "successful_claims"
+            "Successful Claims"
         )
+
     )
 
-    fig, ax = plt.subplots(figsize=(8, 5))
+    fig, ax = plt.subplots(
+        figsize=(9,5)
+    )
 
     sns.barplot(
         data=provider_success,
-        x="successful_claims",
+        x="Successful Claims",
         y="name",
         hue="name",
         palette="crest",
@@ -339,51 +720,65 @@ with col1:
     )
 
     for container in ax.containers:
-        ax.bar_label(container)
+        ax.bar_label(
+            container,
+            padding=3
+        )
 
-    plt.tight_layout()
+    ax.set_xlabel(
+        "Successful Claims"
+    )
+
+    ax.set_ylabel(
+        "Provider"
+    )
+
+    sns.despine()
 
     st.pyplot(fig)
 
     plt.close()
 
-# Average Quantity per Receiver
+    st.caption(
+        "Top performing providers based on completed food claims."
+    )
+# ============================================
+# AVERAGE QUANTITY PER RECEIVER
+# ============================================
+
 with col2:
 
-    st.subheader(
-        "Average Quantity per Receiver"
+    st.markdown(
+        "### 📦 Average Quantity Claimed"
     )
 
-    receiver_avg = (
+    quantity_analysis = (
+
         claims_analysis
-        .groupby(
-            ["receiver_id", "name"]
-        )["quantity"]
+
+        .groupby("type_receiver")["quantity"]
+
         .mean()
-        .reset_index(
-            name="average_quantity"
-        )
+
+        .reset_index()
+
     )
 
-    receiver_avg = (
-        receiver_avg
-        .nlargest(
-            10,
-            "average_quantity"
-        )
-        .sort_values(
-            "average_quantity"
-        )
-    )
+    quantity_analysis.columns = [
+        "Receiver Type",
+        "Average Quantity"
+    ]
 
-    fig, ax = plt.subplots(figsize=(8, 5))
+    fig, ax = plt.subplots(
+        figsize=(8,5)
+    )
 
     sns.barplot(
-        data=receiver_avg,
-        x="average_quantity",
-        y="name",
-        hue="name",
-        palette="mako",
+        data=quantity_analysis,
+        x="Receiver Type",
+        y="Average Quantity",
+        hue="Receiver Type",
+        palette="Blues_r",
         legend=False,
         ax=ax
     )
@@ -394,50 +789,276 @@ with col2:
             fmt="%.1f"
         )
 
-    plt.tight_layout()
+    sns.despine()
 
     st.pyplot(fig)
 
     plt.close()
 
-
-# ============================================
-# INSIGHTS
-# ============================================
+    st.caption(
+        "Average quantity received per claim by receiver category."
+    )
 
 st.divider()
 
-st.subheader("Key Insights")
+# ============================================
+# OPERATIONAL HIGHLIGHTS
+# ============================================
 
 st.markdown(
+    "## 🎯 Operational Highlights"
+)
+
+col1, col2, col3 = st.columns(3)
+
+with col1:
+
+    safe_food = len(
+        claims_analysis[
+            claims_analysis[
+                "days_until_expiry"
+            ] > 0
+        ]
+    )
+
+    st.success(
+        f"""
+        ### ✅ Safe Food Listings
+
+        **{safe_food:,}**
+
+        claims occurred before
+        food expiry.
+        """
+    )
+
+with col2:
+
+    st.warning(
+        f"""
+        ### ⚠️ Expired Claims
+
+        **{expired_claims:,}**
+
+        claims occurred after
+        food expiry dates.
+        """
+    )
+
+with col3:
+
+    top_provider = (
+
+        provider_success.iloc[-1]["name"]
+
+        if len(provider_success) > 0
+
+        else "N/A"
+
+    )
+
+    st.info(
+        f"""
+        ### 🏆 Best Provider
+
+        **{top_provider}**
+
+        achieved the highest
+        number of successful claims.
+        """
+    )
+
+st.divider()
+
+# ============================================
+# EXECUTIVE INSIGHTS
+# ============================================
+
+st.markdown(
+    "## 💡 Executive Insights"
+)
+
+col1, col2 = st.columns(2)
+
+# ============================================
+# INSIGHT 1
+# ============================================
+
+with col1:
+
+    st.info(
+        f"""
+        ### 📊 Claim Performance
+
+        The platform processed
+
+        **{len(claims_analysis):,} claims**
+
+        with an overall completion rate of
+
+        **{completion_rate:.1f}%**
+
+        indicating opportunities to improve
+        redistribution efficiency.
+        """
+    )
+
+# ============================================
+# INSIGHT 2
+# ============================================
+
+with col2:
+
+    st.info(
+        f"""
+        ### ⚠️ Expiry Risk
+
+        A total of
+
+        **{expired_claims:,} claims**
+
+        were associated with expired food.
+
+        This represents a significant
+        operational and food-safety risk.
+        """
+    )
+
+st.write("")
+
+col1, col2 = st.columns(2)
+
+# ============================================
+# INSIGHT 3
+# ============================================
+
+with col1:
+
+    st.success(
+        """
+        ### 🏢 Provider Contribution
+
+        Provider participation remains
+        diversified across the platform,
+        reducing dependency on a single
+        food source.
+        """
+    )
+
+# ============================================
+# INSIGHT 4
+# ============================================
+
+with col2:
+
+    st.success(
+        """
+        ### 🤝 Receiver Utilization
+
+        Food demand is distributed across
+        multiple receiver categories,
+        supporting broader community impact.
+        """
+    )
+
+st.divider()
+
+# ============================================
+# BUSINESS RECOMMENDATIONS
+# ============================================
+
+st.markdown(
+    "## 🚀 Business Recommendations"
+)
+
+st.warning(
     """
-    - Overall claim completion rate is approximately 33.9%.
+    **Recommendation 1**
 
-    - Most food is claimed around 11 days before expiry,
-      though a small number of claims occur after expiry.
-
-    - Barry Group ranks among the strongest operational
-      contributors in terms of successful claim outcomes.
-
-    - Average quantity per receiver should be interpreted
-      alongside claim frequency to avoid small-sample bias.
+    Implement automated expiry alerts
+    for listings approaching expiration.
     """
 )
 
+st.warning(
+    """
+    **Recommendation 2**
+
+    Restrict claim creation for food
+    items that have already expired.
+    """
+)
+
+st.warning(
+    """
+    **Recommendation 3**
+
+    Prioritize high-performing providers
+    to improve redistribution efficiency.
+    """
+)
+
+st.warning(
+    """
+    **Recommendation 4**
+
+    Improve follow-up processes for
+    pending claims to increase
+    completion rates.
+    """
+)
+
+st.divider()
 
 # ============================================
-# SECTION B: CRUD OPERATIONS
+# OPERATIONS SUMMARY
+# ============================================
+
+st.markdown(
+    "## 📊 Operations Summary"
+)
+
+st.success(
+    f"""
+    • Completion Rate: **{completion_rate:.1f}%**
+
+    • Successful Claims: **{successful_claims:,}**
+
+    • Expired Claims: **{expired_claims:,}**
+
+    • Average Days Until Expiry:
+      **{avg_days:.1f} days**
+
+    • The platform demonstrates strong
+      provider participation but can
+      improve claim completion and
+      expiry management processes.
+    """
+)
+
+# ============================================
+# DATA MANAGEMENT
 # ============================================
 
 st.divider()
-st.header("Data Management")
+
+st.markdown(
+    "## 🗄️ Data Management"
+)
+
+st.caption(
+    """
+    Manage Providers, Receivers,
+    Food Listings and Claims directly
+    from the dashboard.
+    """
+)
 
 tab1, tab2, tab3 = st.tabs([
-    "Add Records",
-    "Update Records",
-    "Delete Records"
+    "➕ Add Records",
+    "✏️ Update Records",
+    "🗑️ Delete Records"
 ])
-
 
 # ============================================
 # TAB 1: ADD RECORDS
@@ -445,402 +1066,470 @@ tab1, tab2, tab3 = st.tabs([
 
 with tab1:
 
+    st.markdown(
+        """
+        ### ➕ Add New Records
+        """
+    )
+
     add_tab1, add_tab2, add_tab3, add_tab4 = st.tabs([
-        "Add Provider",
-        "Add Receiver",
-        "Add Food Listing",
-        "Add Claim"
+        "Provider",
+        "Receiver",
+        "Food Listing",
+        "Claim"
     ])
 
+    # ----------------------------------------
+    # ADD PROVIDER
+    # ----------------------------------------
+
     with add_tab1:
-        st.subheader("Add New Provider")
 
         with st.form("add_provider_form"):
+
             name = st.text_input("Provider Name")
+
             provider_type = st.selectbox(
                 "Provider Type",
-                ["Restaurant", "Grocery Store",
-                 "Supermarket", "Catering Service"]
+                [
+                    "Restaurant",
+                    "Grocery Store",
+                    "Supermarket",
+                    "Catering Service"
+                ]
             )
+
             address = st.text_input("Address")
+
             city = st.text_input("City")
+
             contact = st.text_input("Contact")
-            submitted = st.form_submit_button("Add Provider")
+
+            submitted = st.form_submit_button(
+                "Add Provider"
+            )
 
             if submitted:
-                if not name or not city or not contact:
-                    st.error(
-                        "Name, City and Contact are required."
-                    )
-                else:
-                    try:
-                        with engine.connect() as conn:
-                            max_id = conn.execute(
-                                text(
-                                    'SELECT MAX("Provider_ID")'
-                                    ' FROM providers'
-                                )
-                            ).scalar()
-                            new_id = (max_id or 0) + 1
-                            conn.execute(
-                                text("""
-                                    INSERT INTO providers
-                                    ("Provider_ID","Name","Type",
-                                     "Address","City","Contact")
-                                    VALUES
-                                    (:id,:name,:type,
-                                     :address,:city,:contact)
-                                """),
-                                {
-                                    "id": new_id,
-                                    "name": name,
-                                    "type": provider_type,
-                                    "address": address,
-                                    "city": city,
-                                    "contact": contact
-                                }
+
+                try:
+
+                    with engine.connect() as conn:
+
+                        max_id = conn.execute(
+                            text(
+                                'SELECT MAX("Provider_ID") FROM providers'
                             )
-                            conn.commit()
-                        st.success(
-                            f"Provider '{name}' added "
-                            f"with ID {new_id}."
+                        ).scalar()
+
+                        new_id = (max_id or 0) + 1
+
+                        conn.execute(
+                            text("""
+                            INSERT INTO providers
+                            ("Provider_ID","Name","Type","Address","City","Contact")
+                            VALUES
+                            (:id,:name,:type,:address,:city,:contact)
+                            """),
+                            {
+                                "id": new_id,
+                                "name": name,
+                                "type": provider_type,
+                                "address": address,
+                                "city": city,
+                                "contact": contact
+                            }
                         )
-                        st.cache_data.clear()
-                        st.rerun()
-                    except Exception as e:
-                        st.error(f"Error: {e}")
+
+                        conn.commit()
+
+                    st.success(
+                        f"✅ Provider added successfully (ID {new_id})"
+                    )
+
+                    st.cache_data.clear()
+                    st.rerun()
+
+                except Exception as e:
+                    st.error(f"Error: {e}")
+
+    # ----------------------------------------
+    # ADD RECEIVER
+    # ----------------------------------------
 
     with add_tab2:
-        st.subheader("Add New Receiver")
 
         with st.form("add_receiver_form"):
+
             name = st.text_input("Receiver Name")
+
             receiver_type = st.selectbox(
                 "Receiver Type",
-                ["NGO", "Charity", "Shelter", "Individual"]
+                [
+                    "NGO",
+                    "Charity",
+                    "Shelter",
+                    "Individual"
+                ]
             )
+
             city = st.text_input("City")
+
             contact = st.text_input("Contact")
-            submitted = st.form_submit_button("Add Receiver")
+
+            submitted = st.form_submit_button(
+                "Add Receiver"
+            )
 
             if submitted:
-                if not name or not city or not contact:
-                    st.error(
-                        "Name, City and Contact are required."
-                    )
-                else:
-                    try:
-                        with engine.connect() as conn:
-                            max_id = conn.execute(
-                                text(
-                                    'SELECT MAX("Receiver_ID")'
-                                    ' FROM receivers'
-                                )
-                            ).scalar()
-                            new_id = (max_id or 0) + 1
-                            conn.execute(
-                                text("""
-                                    INSERT INTO receivers
-                                    ("Receiver_ID","Name","Type",
-                                     "City","Contact")
-                                    VALUES
-                                    (:id,:name,:type,
-                                     :city,:contact)
-                                """),
-                                {
-                                    "id": new_id,
-                                    "name": name,
-                                    "type": receiver_type,
-                                    "city": city,
-                                    "contact": contact
-                                }
+
+                try:
+
+                    with engine.connect() as conn:
+
+                        max_id = conn.execute(
+                            text(
+                                'SELECT MAX("Receiver_ID") FROM receivers'
                             )
-                            conn.commit()
-                        st.success(
-                            f"Receiver '{name}' added "
-                            f"with ID {new_id}."
+                        ).scalar()
+
+                        new_id = (max_id or 0) + 1
+
+                        conn.execute(
+                            text("""
+                            INSERT INTO receivers
+                            ("Receiver_ID","Name","Type","City","Contact")
+                            VALUES
+                            (:id,:name,:type,:city,:contact)
+                            """),
+                            {
+                                "id": new_id,
+                                "name": name,
+                                "type": receiver_type,
+                                "city": city,
+                                "contact": contact
+                            }
                         )
-                        st.cache_data.clear()
-                        st.rerun()
-                    except Exception as e:
-                        st.error(f"Error: {e}")
+
+                        conn.commit()
+
+                    st.success(
+                        f"✅ Receiver added successfully (ID {new_id})"
+                    )
+
+                    st.cache_data.clear()
+                    st.rerun()
+
+                except Exception as e:
+                    st.error(f"Error: {e}")
+
+    # ----------------------------------------
+    # ADD FOOD LISTING
+    # ----------------------------------------
 
     with add_tab3:
-        st.subheader("Add New Food Listing")
 
         with st.form("add_food_form"):
-            food_name = st.selectbox(
-                "Food Name",
-                ["Rice", "Soup", "Bread", "Fruits",
-                 "Vegetables", "Dairy", "Chicken",
-                 "Fish", "Pasta", "Salad"]
+
+            food_name = st.text_input(
+                "Food Name"
             )
+
             quantity = st.number_input(
-                "Quantity", min_value=1, max_value=100
+                "Quantity",
+                min_value=1
             )
-            expiry_date = st.date_input("Expiry Date")
+
+            expiry_date = st.date_input(
+                "Expiry Date"
+            )
+
             provider_id = st.number_input(
-                "Provider ID", min_value=1
+                "Provider ID",
+                min_value=1
             )
-            provider_type = st.selectbox(
-                "Provider Type",
-                ["Restaurant", "Grocery Store",
-                 "Supermarket", "Catering Service"]
+
+            provider_type = st.text_input(
+                "Provider Type"
             )
-            location = st.text_input("Location")
+
+            location = st.text_input(
+                "Location"
+            )
+
             food_type = st.selectbox(
                 "Food Type",
-                ["Vegetarian", "Vegan", "Non-Vegetarian"]
+                [
+                    "Vegetarian",
+                    "Vegan",
+                    "Non-Vegetarian"
+                ]
             )
+
             meal_type = st.selectbox(
                 "Meal Type",
-                ["Breakfast", "Lunch", "Dinner", "Snacks"]
+                [
+                    "Breakfast",
+                    "Lunch",
+                    "Dinner",
+                    "Snacks"
+                ]
             )
+
             submitted = st.form_submit_button(
                 "Add Food Listing"
             )
 
             if submitted:
+
                 try:
+
                     with engine.connect() as conn:
-                        provider_exists = conn.execute(
-                            text("""
-                                SELECT COUNT(*) FROM providers
-                                WHERE "Provider_ID" = :id
-                            """),
-                            {"id": int(provider_id)}
+
+                        max_id = conn.execute(
+                            text(
+                                'SELECT MAX("Food_ID") FROM food_listings'
+                            )
                         ).scalar()
 
-                        if provider_exists == 0:
-                            st.error(
-                                "Provider ID does not exist."
-                            )
-                        else:
-                            max_id = conn.execute(
-                                text(
-                                    'SELECT MAX("Food_ID")'
-                                    ' FROM food_listings'
-                                )
-                            ).scalar()
-                            new_id = (max_id or 0) + 1
-                            conn.execute(
-                                text("""
-                                    INSERT INTO food_listings
-                                    ("Food_ID","Food_Name",
-                                     "Quantity","Expiry_Date",
-                                     "Provider_ID","Provider_Type",
-                                     "Location","Food_Type",
-                                     "Meal_Type")
-                                    VALUES
-                                    (:id,:food_name,:quantity,
-                                     :expiry_date,:provider_id,
-                                     :provider_type,:location,
-                                     :food_type,:meal_type)
-                                """),
-                                {
-                                    "id": new_id,
-                                    "food_name": food_name,
-                                    "quantity": int(quantity),
-                                    "expiry_date": expiry_date,
-                                    "provider_id": int(provider_id),
-                                    "provider_type": provider_type,
-                                    "location": location,
-                                    "food_type": food_type,
-                                    "meal_type": meal_type
-                                }
-                            )
-                            conn.commit()
-                            st.success(
-                                f"Food listing '{food_name}' "
-                                f"added with ID {new_id}."
-                            )
-                            st.cache_data.clear()
-                            st.rerun()
+                        new_id = (max_id or 0) + 1
+
+                        conn.execute(
+                            text("""
+                            INSERT INTO food_listings
+                            ("Food_ID","Food_Name","Quantity",
+                             "Expiry_Date","Provider_ID",
+                             "Provider_Type","Location",
+                             "Food_Type","Meal_Type")
+                            VALUES
+                            (:id,:food_name,:quantity,
+                             :expiry_date,:provider_id,
+                             :provider_type,:location,
+                             :food_type,:meal_type)
+                            """),
+                            {
+                                "id": new_id,
+                                "food_name": food_name,
+                                "quantity": quantity,
+                                "expiry_date": expiry_date,
+                                "provider_id": provider_id,
+                                "provider_type": provider_type,
+                                "location": location,
+                                "food_type": food_type,
+                                "meal_type": meal_type
+                            }
+                        )
+
+                        conn.commit()
+
+                    st.success(
+                        f"✅ Food Listing added successfully (ID {new_id})"
+                    )
+
+                    st.cache_data.clear()
+                    st.rerun()
+
                 except Exception as e:
                     st.error(f"Error: {e}")
+
+    # ----------------------------------------
+    # ADD CLAIM
+    # ----------------------------------------
 
     with add_tab4:
-        st.subheader("Add New Claim")
 
         with st.form("add_claim_form"):
+
             food_id = st.number_input(
-                "Food ID", min_value=1
+                "Food ID",
+                min_value=1
             )
+
             receiver_id = st.number_input(
-                "Receiver ID", min_value=1
+                "Receiver ID",
+                min_value=1
             )
+
             status = st.selectbox(
                 "Status",
-                ["Pending", "Completed", "Cancelled"]
+                [
+                    "Pending",
+                    "Completed",
+                    "Cancelled"
+                ]
             )
-            timestamp = st.date_input("Claim Date")
-            submitted = st.form_submit_button("Add Claim")
+
+            timestamp = st.date_input(
+                "Claim Date"
+            )
+
+            submitted = st.form_submit_button(
+                "Add Claim"
+            )
 
             if submitted:
+
                 try:
+
                     with engine.connect() as conn:
-                        food_exists = conn.execute(
-                            text("""
-                                SELECT COUNT(*)
-                                FROM food_listings
-                                WHERE "Food_ID" = :id
-                            """),
-                            {"id": int(food_id)}
+
+                        max_id = conn.execute(
+                            text(
+                                'SELECT MAX("Claim_ID") FROM claims'
+                            )
                         ).scalar()
 
-                        receiver_exists = conn.execute(
-                            text("""
-                                SELECT COUNT(*)
-                                FROM receivers
-                                WHERE "Receiver_ID" = :id
-                            """),
-                            {"id": int(receiver_id)}
-                        ).scalar()
+                        new_id = (max_id or 0) + 1
 
-                        if food_exists == 0:
-                            st.error(
-                                "Food ID does not exist."
-                            )
-                        elif receiver_exists == 0:
-                            st.error(
-                                "Receiver ID does not exist."
-                            )
-                        else:
-                            max_id = conn.execute(
-                                text(
-                                    'SELECT MAX("Claim_ID")'
-                                    ' FROM claims'
-                                )
-                            ).scalar()
-                            new_id = (max_id or 0) + 1
-                            conn.execute(
-                                text("""
-                                    INSERT INTO claims
-                                    ("Claim_ID","Food_ID",
-                                     "Receiver_ID","Status",
-                                     "Timestamp")
-                                    VALUES
-                                    (:id,:food_id,
-                                     :receiver_id,:status,
-                                     :timestamp)
-                                """),
-                                {
-                                    "id": new_id,
-                                    "food_id": int(food_id),
-                                    "receiver_id": int(receiver_id),
-                                    "status": status,
-                                    "timestamp": timestamp
-                                }
-                            )
-                            conn.commit()
-                            st.success(
-                                f"Claim added with ID {new_id}."
-                            )
-                            st.cache_data.clear()
-                            st.rerun()
+                        conn.execute(
+                            text("""
+                            INSERT INTO claims
+                            ("Claim_ID","Food_ID","Receiver_ID",
+                             "Status","Timestamp")
+                            VALUES
+                            (:id,:food_id,:receiver_id,
+                             :status,:timestamp)
+                            """),
+                            {
+                                "id": new_id,
+                                "food_id": food_id,
+                                "receiver_id": receiver_id,
+                                "status": status,
+                                "timestamp": timestamp
+                            }
+                        )
+
+                        conn.commit()
+
+                    st.success(
+                        f"✅ Claim added successfully (ID {new_id})"
+                    )
+
+                    st.cache_data.clear()
+                    st.rerun()
+
                 except Exception as e:
                     st.error(f"Error: {e}")
 
-
 # ============================================
-# TAB 2: UPDATE RECORDS
+# UPDATE RECORDS
 # ============================================
 
 with tab2:
-    st.subheader("Update Provider Details")
+
+    st.subheader("✏️ Update Provider")
 
     with st.form("update_provider_form"):
-        update_id = st.number_input(
-            "Provider ID to Update", min_value=1
+
+        provider_id = st.number_input(
+            "Provider ID",
+            min_value=1
         )
-        field_to_update = st.selectbox(
-            "Field to Update",
+
+        field = st.selectbox(
+            "Field",
             ["Name", "Type", "City", "Contact"]
         )
-        new_value = st.text_input("New Value")
-        if field_to_update == "Type":
-            new_value = st.selectbox(
-                "New Provider Type",
-                ["Restaurant", "Grocery Store",
-                 "Supermarket", "Catering Service"]
-            )
-        submitted = st.form_submit_button("Update Provider")
+
+        value = st.text_input(
+            "New Value"
+        )
+
+        submitted = st.form_submit_button(
+            "Update Provider"
+        )
 
         if submitted:
-            if not new_value:
-                st.error("New value is required.")
-            else:
-                try:
-                    with engine.connect() as conn:
-                        result = conn.execute(
-                            text(f"""
-                                UPDATE providers
-                                SET "{field_to_update}"
-                                    = :value
-                                WHERE "Provider_ID" = :id
-                            """),
-                            {
-                                "value": new_value,
-                                "id": int(update_id)
-                            }
-                        )
-                        conn.commit()
-                    if result.rowcount == 0:
-                        st.warning(
-                            f"No provider found "
-                            f"with ID {update_id}."
-                        )
-                    else:
-                        st.success(
-                            f"Provider ID {update_id} "
-                            f"updated successfully."
-                        )
-                        st.cache_data.clear()
-                        st.rerun()
-                except Exception as e:
-                    st.error(f"Error: {e}")
 
+            try:
+
+                with engine.connect() as conn:
+
+                    conn.execute(
+                        text(f'''
+                        UPDATE providers
+                        SET "{field}"=:value
+                        WHERE "Provider_ID"=:id
+                        '''),
+                        {
+                            "value": value,
+                            "id": provider_id
+                        }
+                    )
+
+                    conn.commit()
+
+                st.success(
+                    "✅ Provider updated successfully."
+                )
+
+                st.cache_data.clear()
+                st.rerun()
+
+            except Exception as e:
+                st.error(f"Error: {e}")
 
 # ============================================
-# TAB 3: DELETE RECORDS
+# DELETE RECORDS
 # ============================================
 
 with tab3:
-    st.subheader("Delete Food Listing")
+
     st.warning(
-        "This action is permanent and cannot be undone."
+        "This action cannot be undone."
     )
 
     with st.form("delete_food_form"):
-        delete_id = st.number_input(
-            "Food ID to Delete", min_value=1
+
+        food_id = st.number_input(
+            "Food ID",
+            min_value=1
         )
+
         submitted = st.form_submit_button(
             "Delete Food Listing"
         )
 
         if submitted:
+
             try:
+
                 with engine.connect() as conn:
-                    result = conn.execute(
+
+                    conn.execute(
                         text("""
-                            DELETE FROM food_listings
-                            WHERE "Food_ID" = :id
+                        DELETE FROM food_listings
+                        WHERE "Food_ID"=:id
                         """),
-                        {"id": int(delete_id)}
+                        {"id": food_id}
                     )
+
                     conn.commit()
-                if result.rowcount == 0:
-                    st.warning(
-                        f"No food listing found "
-                        f"with ID {delete_id}."
-                    )
-                else:
-                    st.success(
-                        f"Food listing ID {delete_id} "
-                        f"deleted successfully."
-                    )
-                    st.cache_data.clear()
-                    st.rerun()
+
+                st.success(
+                    "✅ Food listing deleted successfully."
+                )
+
+                st.cache_data.clear()
+                st.rerun()
+
             except Exception as e:
                 st.error(f"Error: {e}")
+
+# ============================================
+# REFRESH DATA
+# ============================================
+
+st.divider()
+
+if st.button(
+    "🔄 Refresh Dashboard Data",
+    use_container_width=True
+):
+
+    st.cache_data.clear()
+
+    st.success(
+        "Dashboard refreshed successfully."
+    )
+
+    st.rerun()
